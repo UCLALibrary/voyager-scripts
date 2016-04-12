@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# Env vars for Oracle and Voyager, available for userids other then
+#   oracle
+#   voyager
+# Three files, three names
+#   vger_getenv		both Oracle and Voyager
+#   vger_oraenv		Oracle only
+#   vger_voyenv		Voyager only
+
+# Oracle only
+
+# See /export/home/oracle/.profile
+ORACLE_SID=VGER					export ORACLE_SID
+ORACLE_BASE=/oracle/app/oracle			export ORACLE_BASE
+ORACLE_DOC=$ORACLE_BASE/doc			export ORACLE_DOC
+ORA_CONFIG=$ORACLE_BASE/admin/$ORACLE_SID/pfile	export ORA_CONFIG
+ORA_LOG=$ORACLE_BASE/admin/$ORACLE_SID/bdump	export ORA_LOG
+
+# See /opt/local/bin/oraenv
+ORACLE_HOME=`/opt/local/bin/dbhome $ORACLE_SID`	export ORACLE_HOME
+
+# See /export/home/oracle/.profile
+ORA_NET=$ORACLE_HOME/network/admin		export ORA_NET
+if [ -z "$LD_LIBRARY_PATH" ]
+then
+    LD_LIBRARY_PATH=$ORACLE_HOME/lib
+else
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ORACLE_HOME/lib
+fi
+export LD_LIBRARY_PATH
+
+# See $ORACLE_HOME/network/admin/tnsnames.ora
+#ORACLE_SID_RMAN=VGERMAN			export ORACLE_SID_RMAN
+
+PATH=$PATH:$ORACLE_HOME/bin		# oracle utilities like sqlplus

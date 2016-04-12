@@ -1,0 +1,29 @@
+#!/bin/sh
+# Retrieves VBBI error file
+
+BIN=/opt/local/bin
+DIR=/m1/voyager/ucladb/local/vbbi
+cd ${DIR}
+
+USER=bb_library
+PWD=`${BIN}/get_value.pl ${BIN}/ais_credentials ${USER}`
+DATE=`date "+%Y%m%d"` #YYYYMMDD
+PACNAME=BATCH-AP-LIBRY-ERR
+LIBNAME=${PACNAME}.${DATE}
+(
+  echo "user ${USER} ${PWD}"
+  echo "get ${PACNAME} ${LIBNAME}"
+  echo "quit"
+) | ftp -n -v fx.it.ucla.edu
+
+# Load the data into Oracle, or delete empty files
+if [ -s ${LIBNAME} ]; then
+  wc -l ${LIBNAME}
+  cat ${LIBNAME}
+  ${BIN}/vger_sqlldr_load vger_support ${LIBNAME} ${DIR}/vbbi_batch_errors.ctl
+  mv ${LIBNAME} ${DIR}/archive/
+  rm ${LIBNAME}.log
+else
+  rm ${LIBNAME}
+fi
+

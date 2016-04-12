@@ -1,0 +1,15 @@
+#!/bin/sh
+
+if [ ! -z "$1" ]; then
+  FILE=$1
+else
+  echo "Usage: $0 patronfile"
+  exit 1
+fi
+
+BASE=/m1/voyager/ucladb
+PATRONFILE=${BASE}/local/patron/${FILE}
+EXE=${BASE}/sbin/Pptrnupdt
+
+${EXE} -p ${PATRONFILE} -i I -n G -o I -m 500
+

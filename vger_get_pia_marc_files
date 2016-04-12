@@ -1,0 +1,91 @@
+#!/bin/sh
+
+BIN=/opt/local/bin
+# Get full environment for cron
+. ${BIN}/vger_getenv
+
+DIR=/m1/voyager/ucladb/local/pia/marc
+TODAY=`date "+%Y%m%d"`    # YYYYMMDD
+
+cat ${DIR}/pia_ftp_credentials | \
+  while read LINE; do
+    # Skip comments
+    FIRSTCHAR=`echo ${LINE} | cut -c1`
+    if [ "${FIRSTCHAR}" = "#" ]; then
+      continue          # back to top of while read LINE
+    fi
+
+    # Chop data lines into fields
+    VENDOR=`echo ${LINE} | cut -d, -f1`
+    SITE=`echo ${LINE} | cut -d, -f2`
+    FILEDIR=`echo ${LINE} | cut -d, -f3`
+    FILESPEC=`echo ${LINE} | cut -d, -f4`
+    ACCOUNT=`echo ${LINE} | cut -d, -f5`
+    PASSWORD=`echo ${LINE} | cut -d, -f6`
+
+    # Add a trailing slash to FILEDIR, unless it's empty
+    if [ -n "${FILEDIR}" ]; then
+      FILEDIR=${FILEDIR}/
+    fi
+
+    # Common base for files for this iteration
+    BASE=pia_${VENDOR}_${ACCOUNT}
+    # Files where current and previous list are stored
+    NEWLIST=${DIR}/${BASE}_current.lst
+    OLDLIST=${DIR}/${BASE}_previous.lst
+
+    # Get files-only list via FTP
+    $BIN/curl -l -s ftp://${ACCOUNT}:${PASSWORD}@${SITE}/${FILEDIR} > ${NEWLIST}
+
+    # If new list is empty, give warning and skip the rest of this vendor/account
+    if [ ! -s ${NEWLIST} ]; then
+      echo "${NEWLIST} is empty, check for errors"
+      continue          # back to top of while read LINE
+    fi
+
+    # Warn if previous list is empty or missing
+    # Copy current to previous to resolve for next run
+    if [ ! -s ${OLDLIST} ]; then
+      echo "WARNING: ${OLDLIST} is empty or missing; copying ${NEWLIST}"
+      cp -p ${NEWLIST} ${OLDLIST}
+    fi
+ 
+    # File of records which will be loaded
+    LOADFILE=${DIR}/${BASE}_${TODAY}.mrc
+
+    # Bail out if file exists, in case previous load failed
+    if [ -s ${LOADFILE} ]; then
+      echo "${LOADFILE} exists, check for errors from previous load"
+      exit 1
+    fi
+
+    # Process the new list only if it has content, else give warning
+    if [ -s ${NEWLIST} ]; then
+      # Compare current list with previous list and retrieve new files
+      # Find files which are in NEWLIST only (-13 = not in #1 and not in both #1 & 2)
+      # Use "while read" instead of "for" to handle files with quotes...
+      comm -13 ${OLDLIST} ${NEWLIST} | while read FILE; do
+        echo Retrieving "${FILE}"...
+        # Retrieve file with curl -s (--silent) -S (--show-error)
+        $BIN/curl -s -S ftp://${ACCOUNT}:${PASSWORD}@${SITE}/${FILEDIR}/"${FILE}" -o "${FILE}"
+        # Build one combined file for loading
+        cat "${FILE}" >> ${LOADFILE}
+        rm "${FILE}"
+      done # while read FILE
+    else # NEWLIST is empty, possible errors
+      echo "${NEWLIST} is empty, check for errors"
+    fi # NEWLIST
+
+    # If LOADFILE was created, load it into Voyager
+    if [ -s ${LOADFILE} ]; then
+      echo "Loading ${LOADFILE}..."
+      ${BIN}/vger_load_pia_phase_1 ${LOADFILE} ${VENDOR} ${ACCOUNT}
+      # vger_load_pia_phase_1 cleans up LOADFILE and its derivatives
+    fi
+
+    # Replace the old list with the current one
+    mv ${OLDLIST} ${OLDLIST}.bak
+    mv ${NEWLIST} ${OLDLIST}
+  done # while read LINE
+# end of cat loop thru pia_credentials
+

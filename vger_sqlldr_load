@@ -1,0 +1,117 @@
+#!/bin/sh
+############################################################
+# This script serves as an interface to sqlldr
+# to load data from a file into a database table
+# in the argument-provided table space.
+#
+# Last revised: 2007-06-06 chunt
+# - Changed $BASE to $INFILE for output files so they will
+#   go in the same folder as input files. This fixes an 
+#   improper call to `basename`.
+# Revised: 2007-06-07 akohler
+# - changed "parsed subfields" to more generic "data"
+############################################################
+
+_show_usage() {
+  echo "\nUSAGE:"
+  echo "$0 schema data_file control_file"
+  echo "  where schema used to access the database"
+  echo "  and data_file is a set of text-based records"
+  echo "  and control_file is the control file."
+  exit 1
+}
+
+########################################
+# Main routine starts here
+
+# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
+BIN=/usr/local/bin
+. ${BIN}/vger_getenv
+
+# Handle input parameters
+# schema is required.
+if [ -n "$1" ]; then
+  SCHEMA=$1
+  PASSWORD=`/opt/local/bin/get_value.pl /opt/local/bin/vger_db_credentials $SCHEMA`
+else
+  _show_usage
+  exit
+fi
+
+# input_file is required.
+if [ -n "$2" ]; then
+  INFILE=$2
+else
+  _show_usage
+  exit
+fi
+
+# control_file is required.
+if [ -n "$3" ]; then
+  CTLFILE=$3
+else
+  _show_usage
+  exit
+fi
+
+# if there's a 4th paramenter incorrectly specified, show usage and exit.
+if [ -n "$4" ]; then
+  _show_usage
+  exit
+fi
+
+if [ ! -r ${INFILE} ]; then
+  echo Input file ${INFILE} must exist and be readable.
+  exit
+fi
+
+if [ ! -r ${CTLFILE} ]; then
+  echo Control file ${CTLFILE} must exist and be readable.
+  exit
+fi
+
+# Delete "bad" file from previous run if it exists.
+# This is data rejected by sqlldr, often duplicate primary keys.
+if [ -f ${INFILE}.bad ]; then
+  echo "\n***** Removing old ${INFILE}.bad *****\n"
+  rm ${INFILE}.bad
+fi
+
+# Other general settings
+OUTDIR=.
+
+    # Load data into Oracle database, using provided credentials.
+    # For these updates, use conventional path load to avoid index conflicts
+    # set larger values for rows & bindsize (was using defaults)
+    echo "\n`date` Loading data into Oracle..."
+    sqlldr userid=$SCHEMA/$PASSWORD control=${CTLFILE} direct=FALSE \
+      silent=\(HEADER, FEEDBACK, DISCARDS\) \
+      bindsize=512000 \
+      rows=100 \
+      data=${INFILE} \
+      bad=${INFILE}.bad \
+      log=${INFILE}.log
+
+    retcode=`echo $?` 
+    case "$retcode" in 
+      0) echo "SQL*Loader execution successful." ;; 
+      1) echo "SQL*Loader execution exited with EX_FAIL, see logfile." ;; 
+      2) echo "SQL*Loader execution exited with EX_WARN, see logfile." ;; 
+      3) echo "SQL*Loader execution encountered a fatal error." ;; 
+      *) echo "SQL*Loader: unknown return code.";; 
+    esac
+
+    # Include log info in output of this script
+    if [ -f ${INFILE}.log ]; then
+      cat ${INFILE}.log
+    else
+      echo "\n***** No log file was generated. *****\n"
+    fi 
+
+    # Draw attention to "bad" file (data rejected by sqlldr), if present
+    if [ -f ${INFILE}.bad ]; then
+      echo "\n***** Look at ${INFILE}.bad *****\n"
+    fi
+
+    echo "`date` Completed loading ${INFILE} into Oracle."
+    echo "\n************************************************************"

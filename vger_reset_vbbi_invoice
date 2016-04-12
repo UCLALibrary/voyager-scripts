@@ -1,0 +1,31 @@
+#!/bin/sh
+# Resets data for a Voyager invoice, allowing it to be re-extracted
+
+# Mandatory parameter: invoice id
+if [ "$1" = "" ]; then
+  echo "Usage: $0 invoice_id"
+  exit 1
+else
+  INVOICE_ID=$1
+fi
+
+BIN=/opt/local/bin
+DIR=/m1/voyager/ucladb/local/vbbi
+cd ${DIR}
+
+BASE=vbbi_reset_invoice
+DATE=`date "+%Y%m%d"` #YYYYMMDD
+
+# Generate file of invoice data
+${BIN}/vger_sqlplus_run vger_support ${BASE} ${INVOICE_ID}
+
+# Rename output file and archive/flag it based on content
+LOGFILE=${BASE}.out.${DATE}.${INVOICE_ID}
+mv ${BASE}.out ${LOGFILE}
+if [ -s ${LOGFILE} ]; then
+  echo "${LOGFILE} is not empty - review carefully"
+  cat ${LOGFILE}
+else
+  mv ${LOGFILE} ${DIR}/archive/
+fi
+

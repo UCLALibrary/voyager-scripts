@@ -1,0 +1,29 @@
+#!/bin/sh
+# Turn on/off redirect for production Voyager OPACs to opacdown
+
+_show_usage() {
+  echo "Usage: $0 off|on"
+  exit 1
+}
+
+if [ -z "$1" ]; then
+  _show_usage
+fi
+
+MODE=$1
+# perl -pi deletes/replaces so doesn't work on links in ActivatedVirtualHosts
+CONFDIR=/m1/shared/apache2/conf/ConfiguredVirtualHosts
+CONFFILES="*_webvoyage.httpd.conf"
+
+if [ -d ${CONFDIR} ]; then
+  case ${MODE} in
+    off) perl -pi -e 's/ RedirectMatch/ #RedirectMatch/' ${CONFDIR}/${CONFFILES} ;;
+    on) perl -pi -e 's/ #RedirectMatch/ RedirectMatch/' ${CONFDIR}/${CONFFILES} ;;
+    *) _show_usage ;;
+  esac
+  /m1/shared/apache2/bin/apachectl -k graceful
+else
+  echo "${CONFDIR} doesn't exist - exiting"
+  exit 1
+fi
+

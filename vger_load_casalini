@@ -1,0 +1,125 @@
+#!/bin/sh
+# Load Casalini EOD (brief order) records into Voyager
+# Similar to vger_get_pia_marc_files and vger_load_gobi...
+# TODO: pull common logic (parsing credentials, retrieving files) into one script
+
+BIN=/opt/local/bin
+# Get full environment for cron
+. ${BIN}/vger_getenv
+
+DIR=/m1/voyager/ucladb/local/eod/casalini
+cd ${DIR}
+
+TODAY=`date "+%Y%m%d"`    # YYYYMMDD
+
+cat ${DIR}/casalini_credentials | \
+  while read LINE; do
+    # Skip comments
+    FIRSTCHAR=`echo ${LINE} | cut -c1`
+    if [ "${FIRSTCHAR}" = "#" ]; then
+      continue          # back to top of while read LINE
+    fi
+
+    # Chop data lines into fields
+    VENDOR=`echo ${LINE} | cut -d, -f1`
+    SITE=`echo ${LINE} | cut -d, -f2`
+    FILEDIR=`echo ${LINE} | cut -d, -f3`
+    FILESPEC=`echo ${LINE} | cut -d, -f4`
+    ACCOUNT=`echo ${LINE} | cut -d, -f5`
+    PASSWORD=`echo ${LINE} | cut -d, -f6`
+
+    # Add a trailing slash to FILEDIR, unless it's empty
+    if [ -n "${FILEDIR}" ]; then
+      FILEDIR=${FILEDIR}/
+    fi
+
+    # Common base for files for this iteration
+    BASE=${VENDOR}_${ACCOUNT}
+    # Files where current and previous list are stored
+    NEWLIST=${DIR}/${BASE}_current.lst
+    OLDLIST=${DIR}/${BASE}_previous.lst
+
+    # Get files-only list via FTP
+    $BIN/curl -l -s ftp://${ACCOUNT}:${PASSWORD}@${SITE}/${FILEDIR} > ${NEWLIST}
+
+    # Warn if previous list is empty or missing
+    # Copy current to previous to resolve for next run
+    if [ ! -s ${OLDLIST} ]; then
+      echo "WARNING: ${OLDLIST} is empty or missing; copying ${NEWLIST}"
+      cp -p ${NEWLIST} ${OLDLIST}
+    fi
+ 
+    # File of records which will be loaded
+    ORDFILE=${DIR}/${BASE}_${TODAY}.mrc
+
+    # Bail out if file exists, in case previous load failed
+    if [ -s ${ORDFILE} ]; then
+      echo "${ORDFILE} exists, check for errors from previous load"
+      exit 1
+    fi
+
+    # Process the new list only if it has content, else give warning
+    if [ -s ${NEWLIST} ]; then
+      # Compare current list with previous list and retrieve new files
+      # Find files which are in NEWLIST only (-13 = not in #1 and not in both #1 & 2)
+      # Use "while read" instead of "for" to handle files with quotes...
+      comm -13 ${OLDLIST} ${NEWLIST} | while read FILE; do
+        echo Retrieving "${FILE}"...
+        # Retrieve file with curl -s (--silent) -S (--show-error)
+        $BIN/curl -s -S ftp://${ACCOUNT}:${PASSWORD}@${SITE}/${FILEDIR}/"${FILE}" -o "${FILE}"
+        # Build one combined file for loading
+        cat "${FILE}" >> ${ORDFILE}
+        rm "${FILE}"
+      done # while read FILE
+    else # NEWLIST is empty, possible errors
+      echo "${NEWLIST} is empty, check for errors"
+    fi # NEWLIST
+
+    # If ORDFILE was created, split into smaller files for loading
+    if [ -s ${ORDFILE} ]; then
+      PROFILE=CASALINI
+      CONTACTS="on-order@library.ucla.edu bnavarre@library.ucla.edu lit-libweb@library.ucla.edu"
+
+      # Acq staff want smaller POs, so split files into chunks of MAXSIZE
+      MAXSIZE=30
+      # Long paths break marcsplit, so strip off path to get just filename
+      ORDFILE=`basename ${ORDFILE}`
+      # Get filename without extension before creating split files
+      BASEFILE=`basename ${ORDFILE} .mrc`
+      ${BIN}/marcsplit -s ${MAXSIZE} ${ORDFILE} ${BASEFILE}
+      # Delete now-split original file
+      rm ${ORDFILE}
+      # Rename split files to append .mrc
+      for SPLITFILE in ${BASEFILE}.[0-9][0-9][0-9]; do
+        mv ${SPLITFILE} ${SPLITFILE}.mrc
+      done
+
+      # Load all of the .mrc files in the directory
+      for LOADFILE in ${BASEFILE}*.mrc; do
+        echo "Loading ${LOADFILE}..."
+        ${BIN}/vger_bulkimport_file ${LOADFILE} ucladb CASALINI promptcat
+
+        # Rename log file
+        LOGFILE=${LOADFILE}.log
+        mv log.imp.${LOADFILE}.bulk ${LOGFILE}
+
+        # Rename file of rejected records
+        if [ -f discard.imp.${LOADFILE}.bulk ]; then
+          mv discard.imp.${LOADFILE}.bulk ${LOADFILE}.rej.mrc
+        fi
+
+        # Email log file to account-specific contacts
+        cat ${LOGFILE} | mailx -s "Casalini ${PROFILE} ${LOADFILE} loaded" ${CONTACTS}
+
+        # Move files into the archive
+        mv ${LOADFILE}* ${DIR}/archive
+
+      done
+    fi # end of ORDFILE processing
+
+    # Replace the old list with the current one
+    mv ${OLDLIST} ${OLDLIST}.bak
+    mv ${NEWLIST} ${OLDLIST}
+  done # while read LINE
+# end of cat loop thru credentials
+

@@ -1,0 +1,25 @@
+#!/bin/ksh
+
+# Runs Ex Libris SQL script to check for errors in summary amounts
+#   on Voyager fund records.
+# Requires read/write access to Voyager Oracle database
+# Requires ksh because it sources voyager.env
+# Should be run only by voyager
+#
+# Last revised: 20070801 akohler
+
+# Set up environment to allow running via cron
+. /opt/local/bin/vger_getenv
+
+# Get USERPASS database credentials from voyager.env
+. /m1/voyager/ucladb/ini/voyager.env
+
+# SQL scripts and output files
+DIR=/m1/voyager/ucladb/local/fund
+
+# Now, in yyyymmdd_hhmiss format
+DATE=`date "+%Y%m%d_%H%M%S"`
+
+# Run diagnostic script, sending output to stdout
+sqlplus ${USERPASS} < ${DIR}/FullFundDiagnostic.sql 2>&1
+

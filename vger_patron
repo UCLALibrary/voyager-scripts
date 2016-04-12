@@ -1,0 +1,95 @@
+#!/bin/sh
+
+############################################################
+# Voyager patron jobs, run by userid voyager from 
+# /opt/local/bin/vger_daily.
+#
+# This script makes daily updates to Voyager's patron 
+# records. It first gets campus registrar and BruinCard 
+# data. Data from those two text files is loaded into the
+# vger_report schema. Then a set of stored procedures are 
+# run to create Patron SIF record entries corresponding to 
+# (1) new patrons from the registrar data, (2) level of 
+# issue changes from the BruinCard data, (3) address 
+# changes from the registrar data, (4) divison changes in 
+# the registrar data, (5) gender changes in the registrar
+# data, and (6) group changes in the registrar data. The 
+# file that is created is then run against the Voyager 
+# Patron Update utility and finally the new fields are 
+# marked as processed with the date they are run.
+#
+# Note that the procedures called from sif_daily_changes.sql 
+# are in a particular order. Because SIF requires a certain 
+# amount of patron information whether or not it has changes
+# means that records from one procedure can overwrite the
+# changes from another procedure. To get around this the 
+# records could either be processed after each procedure
+# or the procedures can be ordered to minimize the
+# overwriting. Since we've made the latter choice it may 
+# take a couple days for all the changes in a patron's 
+# information to be updated in Voyager.
+#
+# Last revised: 2007-03-20 chunt
+############################################################
+
+
+# VGER_BASE
+. /opt/local/bin/vger_voyenv
+
+# Each Voyager database has its own directory
+# Voyager and Oracle must be up
+case `hostname` in
+eliot|wells )
+    SERVER=prod                 # production server
+
+    # Run jobs for ucladb, but not for any other database
+    # /opt/local/bin/vger_daily will take care of rotating logs
+    DIR=$VGER_BASE/ucladb
+    ;;
+butler|collins )
+    SERVER=test                 # test server
+
+    echo "$0: this script can run only on the production server"
+    exit 1
+    ;;
+* )
+    echo "$0: this script can run only on a Voyager server"
+    exit 1
+    ;;
+esac
+
+# Any files created should be accessible to the group.
+umask 007
+
+# 2005-11-28 akohler: Retrieve other files needed for patron updates
+/opt/local/bin/vger_get_patron_files
+
+# Load daily registrar data.
+/opt/local/bin/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/registrar_data.txt /m1/voyager/ucladb/local/patron/registrar_data.ctl
+
+# Load daily BruinCard data.
+/opt/local/bin/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/bruincard_data.txt /m1/voyager/ucladb/local/patron/bruincard_data.ctl
+
+# Load daily Faculty and Staff e-mail data.
+/opt/local/bin/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/fsemail_data.txt /m1/voyager/ucladb/local/patron/fsemail_data.ctl
+
+# Load daily QDB data.
+/opt/local/bin/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/qdb_data.txt /m1/voyager/ucladb/local/patron/qdb_data.ctl
+
+# Run the procedures that create the SIF records in the database table
+# Run the procedures that create the SIF records in the database table
+# and get those records.
+/opt/local/bin/vger_sqlplus_run vger_support /m1/voyager/ucladb/local/patron/sif_daily_changes
+
+# Run our interface script to Voyager's patron update utility.
+/opt/local/bin/vger_patron_update sif_daily_changes.out
+
+# Mark the records as processed on this date.
+/opt/local/bin/vger_sqlplus_run vger_support /m1/voyager/ucladb/local/patron/patron_sif_processed
+
+# 20100216 drickard: Update patron email addresses to eliminate any expiration dates
+/opt/local/bin/vger_updemails /usr/local/java/voyager.properties /m1/voyager/ucladb/local/patron/vger_updemails_errors.txt
+
+# 20120508 drickard: Execute Voyager patron purge job (actually executes on quarter--1 Jan/Apr/Jul/Oct
+# 20150916 drickard: suspending patron purge per VBT-387
+#/opt/local/bin/vger_patron_purge

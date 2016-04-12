@@ -1,0 +1,57 @@
+#!/bin/sh
+
+# Send edi order files to vendors.
+
+# Voyager environment for cron
+BIN=/opt/local/bin
+. ${BIN}/vger_getenv
+
+# The magic happens here
+DIR=/m1/voyager/ucladb/edi/outgoing
+cd ${DIR}
+
+cat ${DIR}/edi_order_credentials | \
+  while read LINE; do
+    # Skip comments
+    FIRSTCHAR=`echo ${LINE} | cut -c1`
+    if [ "${FIRSTCHAR}" = "#" ]; then
+      continue          # back to top of while read LINE
+    fi
+
+    # Chop data lines into fields
+    VENDOR=`echo ${LINE} | cut -d, -f1`
+    SITE=`echo ${LINE} | cut -d, -f2`
+    FILEDIR=`echo ${LINE} | cut -d, -f3`
+    FILESPEC=`echo ${LINE} | cut -d, -f4`
+    ACCOUNT=`echo ${LINE} | cut -d, -f5`
+    PASSWORD=`echo ${LINE} | cut -d, -f6`
+
+    # Transfer local files matching FILESPEC to the vendor using this account info
+    for FILE in ${FILESPEC}; do
+      if [ -s ${FILE} ]; then
+        # Casalini FTP is shared among all users, so rename our file to be unique-er
+        if [ "${VENDOR}" = "CAS" ]; then
+          TARGETFILE=${FILE}.ucla
+        else
+          TARGETFILE=${FILE}
+        fi
+
+        # Transfer the file via FTP to the vendor
+        echo "Sending ${FILE} to ${VENDOR}..."
+        (
+          echo "user ${ACCOUNT} ${PASSWORD}"
+          if [ -n "${FILEDIR}" ]; then
+            echo "cd ${FILEDIR}"
+          fi
+          echo "ascii"
+          echo "put ${FILE} ${TARGETFILE}"
+          echo "quit"
+        ) | ftp -i -n -v ${SITE}
+        mv ${FILE} ${DIR}/sent
+      fi
+    done # FILE
+  done # while read LINE
+# end of cat loop
+
+# See if any misnamed files are left over
+ls -l 

@@ -1,0 +1,56 @@
+#!/bin/ksh
+# ksh apparently needed since REGEN.keyword is ksh
+#
+# Special case of vger_keyword_regen, for ucladb bib records only.
+# Uses two different REGEN scripts in parallel:
+# 1) turbo bibtext
+# 2) keyword with parallelkeystatics (runs keyword regen in 4 parallel parts)
+#
+# Created: 20080219 akohler
+ 
+# For VGER_BASE
+. /opt/local/bin/vger_getenv
+
+# Command line params not really necessary, but helps prevent launching a regen accidentally
+DB=$1
+case ${DB} in
+  ucladb ) ;;
+  * ) echo "Invalid database ${DB}: must be ucladb - exiting"
+      exit 1
+      ;;
+esac
+
+TYPE=$2
+case ${TYPE} in
+  bib ) ;;
+  * ) echo "Invalid type ${TYPE}: must be bib - exiting"
+      exit 1
+      ;;
+esac
+
+# Customized REGEN scripts - not ucladb-specific, but not really for /usr/local/bin either
+SCRIPTDIR=/m1/voyager/ucladb/local/regens
+TODAY=`date "+%Y%m%d"`             # date format is YYYYMMDD
+BASE=/m1/incoming
+
+# List turbobt first as we'll run it in the background
+for SCRIPTTYPE in turbobt bibkw_parallel; do
+  DIR=${BASE}/${DB}_${TYPE}_${TODAY}_${SCRIPTTYPE}
+  mkdir -p ${DIR}
+  # Must CD into directory or files won't be created in the right place
+  cd ${DIR}
+  if [ $? -eq 0 ]; then
+    SCRIPT=REGEN.${SCRIPTTYPE}
+    # Run the turbo bibtext regen in the background, so we can start the parallel keyword regen
+    if [ ${SCRIPTTYPE} = turbobt ]; then
+      ${SCRIPTDIR}/${SCRIPT} ${VGER_BASE}/${DB}/ini/voyager.env > ${SCRIPTTYPE}.regen.log 2>&1 &
+    else
+      ${SCRIPTDIR}/${SCRIPT} ${VGER_BASE}/${DB}/ini/voyager.env > ${SCRIPTTYPE}.regen.log 2>&1
+    fi
+  else
+    echo "Unable to switch to ${DIR} - exiting"
+    exit 1
+  fi
+  # rm bib_text* dynamic.* omnisearch.* ucladb.*
+done
+

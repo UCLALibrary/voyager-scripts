@@ -1,0 +1,25 @@
+#!/bin/sh
+# Must be run as oracle or other user in dba group
+
+# For ORACLE_HOME and other environment
+. /opt/local/bin/vger_oraenv
+
+# For running SQL commands
+SQLDBA="${ORACLE_HOME}/bin/sqlplus -S /nolog"
+
+# Mandatory parameters
+if [ -n "$1" ]; then
+  TABLESPACES=$1
+else
+  echo "Usage: $0 tablespace(s) (single tablespace, or quoted space-separated list of tablespaces)"
+  exit 1
+fi
+
+for TABLESPACE in ${TABLESPACES}; do
+  # Tablespace into read write mode
+  echo "Setting tablespace ${TABLESPACE} read write"
+  ${SQLDBA} << EOD
+  connect / as sysdba
+  alter tablespace ${TABLESPACE} read write;
+EOD
+done

@@ -1,0 +1,80 @@
+#!/bin/sh
+
+# Use rsync+ssh to copy archived Oracle redo logs offsite
+# Remove old archived Oracle redo logs after two days
+
+# This user exists on both local and remote server
+# and has its local keys on the remote server
+user=oracle
+
+# Must be run by this user
+if [ "`/usr/bin/id | cut -f1 -d')' | cut -f2 -d '('`" != "$user" ]
+then
+    exit 1
+fi
+
+# Short name of this script, for error messages and log name
+self=`basename $0`
+
+# We will log here, with the logger command
+# We have already added to /etc/syslog.conf
+#   local1.info			ifdef(`LOGHOST', /var/log/vger_rsync_logs, @loghost)
+log=/var/log/$self
+
+# Short name of local server also appears in remote path
+src=`hostname`
+
+# Short name of remote server
+dest=lit224v
+
+# Oracle database name appears in both local and remote paths
+# Haven't turned on archiving for MRDN yet
+# or created a place on the remote server for it
+db_list=VGER
+
+for db in $db_list; do
+    # Local directory holding the archived redo logs
+    # Source must be terminated with a slash when copying recursively
+    ldir=/oracle/oradata/$db/arch/
+
+    # Remote directory holding the second copy of the logs
+    # Destination doesn't need to be terminated with a slash
+    rdir=$dest:/sftp/$user/$src/$db/arch
+
+    # Remove files more than two days (48 hours) old from local server
+    find $ldir -type f -mtime +2 | xargs rm -f
+
+    # Items in an rsync exclude list will not be copied *or* deleted
+    # --temp-dir=/tmp       non-default scratch dir (default is receiving dir)
+    # -r                    recursive
+    # -l                    copy symlinks as symlinks
+    # --safe-links          ignore symlinks that point outside the tree
+    # -t                    preserve modification time
+    # -H                    preserve hard links
+    # -v                    verbose
+    # -c		    use checksum (not mod time and size) to decide eligibility
+    # --perms               preserve permissions
+    # --delete              delete remote files that don't exist here
+    # --max-delete=#        delete max # files
+    # --log-format=FORMAT   output filenames using the specified format
+    #   %o                  operation: "send", "recv",  or "del."
+    #   %b                  number of bytes actually transferred
+    #   %f                  filename
+    #   %L                  " -> SYMLINK" or " => HARDLINK" or empty string
+    echo "Start rsync ($src:$ldir -> $rdir)" | logger -p local1.info 
+    output="`/usr/local/bin/rsync				\
+	--rsh=/usr/bin/ssh --rsync-path=/usr/bin/rsync	\
+	--temp-dir=/tmp					\
+	-r -l --safe-links -t -H -v -c			\
+	--delete               				\
+	--log-format=\"%o %b %f%L\"			\
+	$ldir $rdir 2>&1`"
+
+    if [ $? -ne 0 ]; then
+	# Error: notify LWS and Solaris/Linux admins
+	echo "$self: Error: Check $src:$log" | mailx -r lit-libweb@library.ucla.edu \
+	    -s "$self: Error: Check $src:$log" lit-libweb@library.ucla.edu root@library.ucla.edu
+    fi
+    echo "$output" | logger -p local1.info 
+    echo "End rsync ($src:$ldir -> $rdir)\n" | logger -p local1.info 
+done

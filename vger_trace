@@ -1,0 +1,67 @@
+#!/bin/ksh
+# Creates files to support ad-hoc tracing of Voyager internals
+# Created: 20080604 akohler
+# Revised:
+# - 20080619 akohler: made port optional, for tracing non-listening programs like bulkimport
+
+# For RELEASE
+. /usr/local/bin/vger_getenv
+
+if [ -z $2 ]; then
+  echo "Usage: $0 database appsvr [port]"
+  echo "Example: $0 ucladb catsvr 9998"
+  exit 1
+fi
+
+DB=$1
+APPSVR=$2
+PORT=$3
+
+BASE=/m1/voyager/${DB}
+
+# Make sure files exist
+for FILE in ${BASE}/ini/voyager.env ${BASE}/ini/voyager.ini /m1/voyager/bin/${RELEASE}/${APPSVR} ; do
+  if [ ! -f ${FILE} ]; then
+    echo "${FILE} not found - aborting"
+    exit 1
+  fi
+done
+
+# All working files created in $TMP
+TMP=/tmp
+ENV=${TMP}/voyager.env.${APPSVR}
+INI=${TMP}/voyager.ini.${APPSVR}
+
+# Copy and modify DB's voyager.env
+cp ${BASE}/ini/voyager.env ${ENV}
+echo "export SQLTRACE=TRUE" >> ${ENV}
+
+# Copy and modify DB's voyager.ini
+cp ${BASE}/ini/voyager.ini ${INI}
+(
+  echo ""
+  echo "[${APPSVR}]"
+  echo "LOGFILE=${TMP}/log.${APPSVR}"
+  echo "MAXFILESIZE=20"
+  echo "SEVERE="
+  echo "ERROR="
+  echo "SQLERROR="
+  echo "WARN="
+  echo "THEWORKS=*"
+) >> ${INI}
+
+# Source the custom ENV file
+. ${ENV}
+
+# Run APPSVR with custom INI file on specific PORT (if supplied)
+# Below variables not defined in this script come from ENV
+# Ex Libris uses exec in their scripts (like Pcatsvr); not wanted here since script would end after exec finishes
+CMD="${VOYAGER_BIN}/${APPSVR} -d ${ORACLE_SID} -u ${USERPASS} -c ${INI}"
+if [ ! -z ${PORT} ]; then
+  CMD="${CMD} -P ${PORT}"
+fi
+${CMD}
+
+# Clean up
+rm -f ${ENV} ${INI}
+

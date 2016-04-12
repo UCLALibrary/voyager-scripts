@@ -1,0 +1,91 @@
+#!/bin/sh
+# Retrieves and loads Harrassowitz records (brief bib/order records)
+# Intended to be run daily, to process previous day's file if present
+
+BIN=/opt/local/bin
+# Get full environment for cron
+. ${BIN}/vger_getenv
+
+# Mandatory parameter: date in YYYYMMDD
+if [ -n "$1" ]; then
+  DATE=$1
+else
+  # No parameter, use yesterday's date
+  DELTA=-1
+  . /opt/local/bin/vger_ymd_delta
+  DATE=${YEAR}${MONTH}${DAY}
+fi
+
+# The magic happens here
+DIR=/m1/voyager/ucladb/local/eod/harrassowitz
+cd ${DIR}
+
+# HAR files look like this:
+# 20110203061639.18.orders.marc21.abc (OBSOLETE)
+# 20151202062203.18.ord.mrc (2015-11 and later)
+# Get all files for given YYYYMMDD
+# Multiple HAR accounts - only one has these files - hardcoded for now
+USER=uclalib3
+PWD=`${BIN}/get_value.pl ${BIN}/harrassowitz_credentials ${USER}`
+(
+  echo "user ${USER} ${PWD}"
+  echo "bin"
+  echo "mget ${DATE}*"
+  echo "quit"
+) | ftp -n -i -v ftp.harrassowitz.de
+
+# Now process any files
+# 20151204: Incoming files are now named *.mrc; rename to *.abc so rest of script doesn't have to be rewritten.
+for NEWFILE in *.ord.mrc; do
+  if [ -f ${NEWFILE} ]; then
+    mv ${NEWFILE} ${NEWFILE}.abc
+  fi
+done
+
+# Acq staff want smaller POs, so split files into chunks of 1 record each
+for ORDFILE in *.abc; do
+  if [ -f ${ORDFILE} ]; then
+    BIGBASEFILE=`basename ${ORDFILE} .abc`
+    ${BIN}/marcsplit -s 1 ${ORDFILE} ${BIGBASEFILE}
+
+    # Rename split files to append .mrc
+    for SPLITFILE in ${BIGBASEFILE}.[0-9][0-9][0-9]; do
+      mv ${SPLITFILE} ${SPLITFILE}.mrc
+    done
+
+    # Load all of the .mrc files in the directory
+    for LOADFILE in *.mrc; do
+      if [ -f ${LOADFILE} ]; then
+        BASEFILE=`basename ${LOADFILE} .mrc`
+
+        # Load the file into Voyager
+        echo "Loading ${LOADFILE}..."
+        ${BIN}/vger_bulkimport_file ${LOADFILE} ucladb HAR promptcat
+
+	#Reminder: LOADFILE = BASEFILE.mrc - both are used below
+
+	# Rename log file
+	LOGFILE=${BASEFILE}.log
+	mv log.imp.${LOADFILE}.bulk ${LOGFILE}
+
+        # Rename file of rejected records
+        if [ -f discard.imp.${LOADFILE}.bulk ]; then
+          mv discard.imp.${LOADFILE}.bulk ${BASEFILE}.rej.mrc
+        fi
+
+      fi # -f ${LOADFILE}
+    done # ${LOADFILE}
+
+    # Email relevant log info from all of the resulting logs to specific users
+    grep -h "Purchase Order Number" *.log | grep -v "check log" | mailx -s "HAR loaded ${ORDFILE}" \
+      on-order@library.ucla.edu lit-libweb@library.ucla.edu
+
+    # Move files into the archive
+    mv ${BIGBASEFILE}* ${DIR}/archive
+
+  fi # ${ORDFILE}
+done # ${ORDFILE}
+
+# Remove archived files older than 180 days
+find ${DIR}/archive -type f -mtime +180 -exec rm {} \;
+

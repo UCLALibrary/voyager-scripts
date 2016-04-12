@@ -1,0 +1,150 @@
+#!/bin/ksh
+# Retrieves YBP Promptcat files from OCLC and loads relevant ones into Voyager
+# Designed to be run daily via cron, but can be run manually
+
+# Capture input parameter for later use
+if [ -n "$1" ]; then
+  DATE=$1
+fi
+
+# Clear input parameters so they don't conflict with .profile later
+set --
+
+# Get full voyager & oracle environment for cron
+BIN=/opt/local/bin
+. /export/home/voyager/.profile
+
+# Mandatory parameter: date in YYMMDD
+if [ ! -n "$DATE" ]; then
+  # No parameter, use yesterday's date
+  DELTA=-1
+  . ${BIN}/vger_ymd_delta
+  DATE=`echo ${YEAR}${MONTH}${DAY} | cut -c3-8`
+fi
+
+# Everything happens here
+DIR=/m1/voyager/ucladb/local/eod/ybp_promptcat
+cd ${DIR}
+
+# Archive directory - make it if it's missing
+LOADED=${DIR}/loaded
+if [ ! -d ${LOADED} ]; then
+  mkdir ${LOADED}
+fi
+
+# Script directory - exit if it's missing
+SCRIPTS=${DIR}/scripts
+if [ ! -d ${SCRIPTS} ]; then
+  echo "ERROR: ${SCRIPTS} is missing - exiting"
+  exit 1
+fi
+
+echo "Checking for files for date: ${DATE}"
+
+# For a given date, there may be several files:
+# Text files with info about the MARC files
+# - RPT.YDX.Dyymmdd
+# - RPT.YNK.Dyymmdd
+# - RPT-N$T.Dyymmdd
+# MARC files
+# - RCD.YDX.Dyymmdd.APPR
+# - RCD.YDX.Dyymmdd.FIRM
+# - RCD.YNK.Dyymmdd.APPR
+# - RCD.YNK.Dyymmdd.FIRM
+# - RCD.N$T.Dyymmdd
+(
+  echo "cd 'edx.pcat.clu'"
+  echo "asc"
+  echo "mget RPT.*.D${DATE}"
+  echo "bin"
+  echo "mget RCD.*.D${DATE}.*"
+  echo "quit"
+) | ftp -i -v edx.oclc.org
+
+echo ""
+
+# List what we have, for convenience
+ls -l RPT* RCD*
+
+# Rename the text files
+for FILE in `ls RPT.* 2>/dev/null`; do 
+  case ${FILE} in 
+    RPT.YDX.D${DATE} ) mv ${FILE} ${LOADED}/YBP${DATE}.txt ;;
+    RPT.YNK.D${DATE} ) mv ${FILE} ${LOADED}/YNK${DATE}.txt ;;
+    RPT.N*           ) mv ${FILE} ${DIR}/netlibrary_temp/ ;;
+    * ) echo "*** Unknown file ${FILE} ***"
+        ;;
+  esac
+done
+
+# Rename the MARC files
+# Approvals will be further processed and loaded; firm orders will be handled separately
+for FILE in `ls RCD.* 2>/dev/null`; do 
+  case ${FILE} in
+    RCD.YDX.D${DATE}.APPR ) mv ${FILE} YBP_APPR${DATE}.mrc ;;
+    RCD.YNK.D${DATE}.APPR ) mv ${FILE} YNK_APPR${DATE}.mrc ;;
+    RCD.YDX.D${DATE}.FIRM ) mv ${FILE} ${LOADED}/YBP_FIRM${DATE}.mrc ;;
+    RCD.YNK.D${DATE}.FIRM ) mv ${FILE} ${LOADED}/YNK_FIRM${DATE}.mrc ;;
+    RCD.N*                ) mv ${FILE} ${DIR}/netlibrary_temp/ ;;
+    * ) echo "*** Unknown file ${FILE} ***"
+        ;;
+  esac
+done
+
+echo ""
+
+# Approval files need pre-processing
+# * Add custom acquisitions info from db
+# * Split by loc code in 952 $b (added in previous step)
+SCHEMA=vger_support
+PWD=`${BIN}/get_value.pl ${BIN}/vger_db_credentials $SCHEMA`
+for FILE in Y*_APPR*.mrc; do 
+  if [ -f ${FILE} ]; then
+    echo "Adding acq info to ${FILE}..."
+    mv ${FILE} ${FILE}.bak
+    ${SCRIPTS}/prep_ybp.pl ${FILE}.bak ${FILE} ${SCHEMA} ${PWD}
+    if [ ! -s ${FILE} ]; then
+      echo "ERROR creating ${FILE} - exiting"
+      exit 1
+    fi
+    rm ${FILE}.bak
+
+    echo "Splitting ${FILE} by location..."
+    ${SCRIPTS}/split_by_952b.pl ${FILE}
+    rm ${FILE} # no longer needed after new split file(s) created
+  fi
+done
+
+# Split resulting files into max-60-record chunks for smaller POs
+for FILE in Y*_APPR*.mrc; do
+  if [ -f ${FILE} ]; then
+    echo "Splitting ${FILE} into smaller chunks..."
+    ${BIN}/split_marc_file.sh ${FILE} 60
+    rm ${FILE} # no longer needed after new split file(s) created
+  fi
+done
+
+# Load approval records only (Y*_APPR*.mrc from above pre-processing)
+DB=ucladb
+PROFILE=PCATYBP
+USER=promptcat
+for LOADFILE in Y*_APPR*.mrc; do
+  if [ -s ${LOADFILE} ]; then
+    echo "Loading ${LOADFILE}..."
+    ${BIN}/vger_bulkimport_file ${LOADFILE} ${DB} ${PROFILE} ${USER}
+    BASENAME=`basename ${LOADFILE} .mrc`
+
+    # Should always be a log file; rename it
+    mv log.imp.${LOADFILE}.bulk ${BASENAME}_phase1.log
+
+    # There's sometimes a discard file; rename it too, if it exists
+    DISCARD=discard.imp.${LOADFILE}.bulk
+    if [ -f ${DISCARD} ]; then
+      mv ${DISCARD} ${BASENAME}_phase1.dups
+    fi
+
+    # Move files so they don't accidentally get processed again
+    mv ${BASENAME}* ${LOADED}
+  fi # -s ${LOADFILE}
+done # ${LOADFILE}
+

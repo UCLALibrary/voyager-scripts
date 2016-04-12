@@ -1,0 +1,77 @@
+#!/bin/ksh
+# Loads phase 1 (pre-order) bib records into Voyager
+#  for Patron Initiated Acquisitions (PIA) project.
+
+# Voyager environment for cron
+BIN=/opt/local/bin
+. ${BIN}/vger_getenv
+
+# Mandatory parameters
+if [ -z "$3" ]; then
+  echo "Usage: $0 filename vendorcode account"
+  exit 1
+else
+  BIBFILE=$1
+  VENDOR=$2
+  ACCOUNT=$3
+  VENDORACCOUNT=${VENDOR}_${ACCOUNT}
+fi
+
+case ${VENDORACCOUNT} in
+  CIB_EUS90900 ) MAILTO=chengh@library.ucla.edu ;;
+  YBP_ucla     ) MAILTO=bnavarre@library.ucla.edu ;;
+  YBP_uclalaw  ) MAILTO="spadoni@law.ucla.edu" ;;
+  *            ) echo "ERROR: unsupported vendor/account ${VENDORACCOUNT} - skipping"
+                 exit 1
+                 ;;
+esac
+
+# Define directories
+BASEDIR=/m1/voyager/ucladb/local/pia
+ARCHIVEDIR=${BASEDIR}/marc/loaded
+
+# Everything happens here
+cd ${BASEDIR}/marc
+
+# This load is for ucladb only
+DB=ucladb
+PROFILE=PIA1
+USER=promptcat
+
+# Modify records as needed before loading
+UPDBIBFILE=${BIBFILE}.852
+${BASEDIR}/pia_phase_1_update_bibs.pl ${VENDOR} ${BIBFILE} ${UPDBIBFILE}
+
+# Load the updated records
+# Calling script may provide full path; we must have only the filename
+UPDBIBFILE=`basename ${UPDBIBFILE}`
+${BIN}/vger_bulkimport_file ${UPDBIBFILE} ${DB} ${PROFILE} ${USER}
+
+# Should always be a log file; rename it
+LOGFILE=`basename ${BIBFILE} .mrc`_phase_1.log
+mv log.imp.${UPDBIBFILE}.bulk ${LOGFILE}
+# Include contents in output
+cat ${LOGFILE}
+mv ${LOGFILE} ${ARCHIVEDIR}
+
+# There's sometimes a discard file; rename it too, if it exists, and send to library contact
+if [ -f discard.imp.${UPDBIBFILE}.bulk ]; then
+  DUPFILE=`basename ${BIBFILE} .mrc`_phase_1.dups
+  mv discard.imp.${UPDBIBFILE}.bulk ${DUPFILE}
+
+  # Send text version of dup records to library contacts for manual review
+  ${BIN}/marcview ${DUPFILE} | mailx -s "PIA dups not loaded for ${VENDOR} ${BIBFILE}" ${MAILTO} lit-libweb@library.ucla.edu
+  mv ${DUPFILE} ${ARCHIVEDIR}
+fi
+
+# There might be an error file; rename it and store it
+if [ -f err.imp.${UPDBIBFILE}.bulk ]; then
+  ERRFILE=`basename ${BIBFILE} .mrc`.err.mrc
+  mv err.imp.${UPDBIBFILE}.bulk ${ERRFILE}
+  ### TODO: Maybe convert to text?  Email to MAILTO?
+  mv ${ERRFILE} ${ARCHIVEDIR}
+fi
+
+# Clean up
+mv ${BIBFILE} ${ARCHIVEDIR}
+rm -f ${UPDBIBFILE}

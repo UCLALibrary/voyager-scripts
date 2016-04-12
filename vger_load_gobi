@@ -1,0 +1,140 @@
+#!/bin/sh
+# Retrieves and loads YBP GOBI records (brief bib/order records)
+# Intended to be run daily, to process previous day's file if present
+
+BIN=/opt/local/bin
+# Get full environment for cron
+. ${BIN}/vger_getenv
+
+# The magic happens here
+DIR=/m1/voyager/ucladb/local/eod/gobi
+cd ${DIR}
+
+SITE=ftp.ybp.com
+FTPDIR=orders
+
+# Retrieve new files for all accounts
+for USER in UCLA uclacl; do
+  PASSWORD=`/opt/local/bin/get_value.pl ${DIR}/../config/ybp_credentials ${USER}`
+  NEWLIST=${DIR}/gobi_current_${USER}.lst
+  OLDLIST=${DIR}/gobi_previous_${USER}.lst
+
+  # Get current list of MARC files (*.ord) on FTP server; we don't care
+  #  about textual *.cnt files, which have the number of records in corresponding *.ord files
+  $BIN/curl -s -l ftp://${USER}:${PASSWORD}@${SITE}/${FTPDIR}/ | grep "\.ord$" > ${NEWLIST}
+
+  # Bail out if OLDLIST doesn't have content
+  if [ ! -s ${OLDLIST} ]; then
+    echo "${OLDLIST} is empty or missing; correct this so new files can be identified."
+    exit 1
+  fi
+
+  # Process the new list only if it has content
+  if [ -s ${NEWLIST} ]; then
+    # Compare current list with previous list and retrieve new files
+    # Find files which are in NEWLIST only (-13 = not in #1 and not in both #1 & 2)
+    for FILE in `comm -13 ${OLDLIST} ${NEWLIST}`; do
+      echo "Retrieving ${FILE}..."
+      # Retrieve file with curl -s (--silent) -S (--show-error)
+      $BIN/curl -s -S ftp://${USER}:${PASSWORD}@${SITE}/${FTPDIR}/${FILE} -o ${FILE}
+    done
+
+    # Replace the old list with the current one
+    mv ${OLDLIST} ${OLDLIST}.bak
+    mv ${NEWLIST} ${OLDLIST}
+
+  else # NEWLIST is empty, possible errors
+    echo "${NEWLIST} is empty, check for errors"
+    exit 1
+  fi
+done
+
+# Now process any files
+for ORDFILE in `ls *.ord 2>/dev/null`; do
+  # Rarely, old files are retrieved, for an unknown reason.
+  # Double-check that we don't already have the file.
+  if [ -f ${DIR}/archive/${ORDFILE} ]; then
+    echo "***** ERROR: ${ORDFILE} already exists! *****"
+    continue    # back to "for ORDFILE"
+  fi
+
+  # Acq staff want smaller POs, so split files into chunks of MAXSIZE
+  MAXSIZE=30
+  if [ -s ${ORDFILE} ]; then
+    # Do in-place replacement of tab with space (1 to 1) since 
+    #   staff sometimes use tab, which is illegal in MARC
+    perl -p -i -e 's/\t/ /g' ${ORDFILE}
+    BASEFILE=`basename ${ORDFILE} .ord`
+    ${BIN}/marcsplit -s ${MAXSIZE} ${ORDFILE} ${BASEFILE}
+    # Archive the full order file
+    mv ${ORDFILE} ${DIR}/archive
+    # Rename split files to append .mrc
+    for SPLITFILE in ${BASEFILE}.[0-9][0-9][0-9]; do
+      mv ${SPLITFILE} ${SPLITFILE}.mrc
+    done
+  fi
+done  # ORDFILE
+
+# Load all of the .mrc files in the directory
+for LOADFILE in *.mrc; do
+  if [ -s ${LOADFILE} ]; then
+    BASEFILE=`basename ${LOADFILE} .mrc`
+
+    # Set defaults based on filename (which is based on account number)
+    case ${BASEFILE} in
+      # Accounts 04 and 05 are ILL for YRL
+      04*|05*)
+        PROFILE=GOBILLYR
+        CONTACTS="cmedina@library.ucla.edu jcl@library.ucla.edu lit-libweb@library.ucla.edu"
+        ;;
+      # Account 06 is ILL for Biomed
+      06*)
+        PROFILE=GOBILLBI
+        CONTACTS="aaa@library.ucla.edu bobfreel@library.ucla.edu cmedina@library.ucla.edu lit-libweb@library.ucla.edu"
+        ;;
+      # Account 09 is e-books, managed by Roxanne Peck
+      09*)
+	PROFILE=GOBI
+	CONTACTS="rpeck@library.ucla.edu aitakara@library.ucla.edu lit-libweb@library.ucla.edu"
+        ;;
+      # Everything else is regular Gobi orders
+      *) 
+        PROFILE=GOBI
+        CONTACTS="on-order@library.ucla.edu lit-libweb@library.ucla.edu"
+        ### Uncomment this section vvvv during fiscal close
+        #echo "${LOADFILE} NOT LOADED DURING FISCAL CLOSE"
+        #if [ ! -d pending ]; then mkdir pending; fi
+        #mv ${LOADFILE} ${DIR}/pending
+        #continue # back to "for LOADFILE"
+        ### Uncomment this section ^^^^ during fiscal close
+        ;;
+    esac
+
+    # Load the file into Voyager
+    echo "Loading ${LOADFILE}..."
+    ${BIN}/vger_bulkimport_file ${LOADFILE} ucladb ${PROFILE} promptcat
+
+    #Reminder: LOADFILE = BASEFILE.mrc - both are used below
+
+    # Rename log file
+    LOGFILE=${BASEFILE}.log
+    mv log.imp.${LOADFILE}.bulk ${LOGFILE}
+
+    # Rename file of rejected records
+    if [ -f discard.imp.${LOADFILE}.bulk ]; then
+      mv discard.imp.${LOADFILE}.bulk ${BASEFILE}.rej.mrc
+    fi
+
+    # Email log file to account-specific contacts
+    cat ${LOGFILE} | mailx -s "YBP ${PROFILE} ${LOADFILE} loaded" ${CONTACTS}
+
+    # Move files into the archive
+    mv ${BASEFILE}.* ${DIR}/archive
+
+  fi # -s ${LOADFILE}
+done # ${LOADFILE}
+
+# Gobi filenames get reused after a year (nnMMDD.ord).
+# Remove archived files older than 270 days
+find ${DIR}/archive -type f -mtime +270 -exec rm {} \;
+

@@ -1,0 +1,54 @@
+#!/bin/sh
+# Check list of apache sites for errors
+
+# Full environment for cron
+BIN=/opt/local/bin
+. ${BIN}/vger_getenv
+
+# Arguments
+# File with list of sites: use if provided, else default
+if [ -z "$2" ]; then
+  SITE_LIST=/m1/voyager/ucladb/local/system/apache_sites.lst
+else
+  SITE_LIST=$2
+fi
+if [ ! -s $SITE_LIST ]
+then
+  echo "Error: empty or missing '$SITE_LIST'"
+  echo "Usage: $0 prod|test [file_with_list_of_sites]"
+  exit 1
+fi
+
+# Mode (mandatory)
+if [ -z "$1" ]; then
+  echo "Usage: $0 prod|test [file_with_list_of_sites]"
+  exit 1
+fi
+case "$1" in
+prod|test)
+  MODE=$1
+  ;;
+*)
+  echo "Usage: $0 prod|test [file_with_list_of_sites]"
+  exit 1
+  ;;
+esac
+
+# Use curl to check HTTP status of URLs
+# -o /dev/null		# ignore output
+# -s			# silent
+# -S			# but show errors if they occur
+# -w %{http_code}	# get just the HTTP status code
+# --head		# HTTP HEAD gets just headers, not the full document
+OPTIONS='-o /dev/null -s -S -w %{http_code} --head'
+
+# Check all sites for this mode
+# For example
+#   prod http://catalog.library.ucla.edu/
+# Read the first word into a variable named IGNORE and ignore it
+grep "^${MODE}" ${SITE_LIST} | while read IGNORE URL; do
+  STATUS=`curl ${OPTIONS} ${URL}`
+  if [ ${STATUS} -ne 200 ]; then
+    echo ${STATUS} ${URL}
+  fi
+done

@@ -1,0 +1,76 @@
+#!/bin/sh
+############################################################
+# This script runs Java the commandline method DelPatNote.
+#
+# Last revised: 2008-01-15 chunt
+############################################################
+
+_show_usage() {
+  echo "\nUSAGE:"
+  echo "$0 props_file error_file"
+  echo "  where props_file is a list of config values for UpdatePatronEmail"
+  echo "  and error_file is the error file which lists return codes for rows which caused errors."
+  exit 1
+}
+
+
+########################################
+# Main routine starts here
+
+# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
+BIN=/usr/local/bin
+. ${BIN}/vger_getenv
+
+# Handle input parameters
+# props_file is required.
+if [ -n "$1" ]; then
+  PROPS_FILE=$1
+else
+  _show_usage
+  exit
+fi
+
+# error_file is required.
+if [ -n "$2" ]; then
+  ERROR_FILE=$2
+else
+  _show_usage
+  exit
+fi
+
+# if there are more parameters, show usage and exit
+if [ -n "$3" ]; then
+  _show_usage
+  exit
+fi
+
+if [ ! -r ${PROPS_FILE} ]; then
+  echo Props file ${PROPS_FILE} must exist and be readable.
+  exit
+fi
+
+# Delete error file from previous run if it exists.
+# This is data that causes non-zero return codes.
+if [ -f ${ERROR_FILE} ]; then
+  echo "\n***** Removing old error file ${ERROR_FILE} *****"
+  rm ${ERROR_FILE}
+fi
+
+# changed to use actual latest java executable drickard 20100709
+#JAVA=/usr/jdk/latest/bin/java
+JAVA=/usr/local/bin/java
+CLASSPATH=/usr/local/java
+
+${JAVA} -jar ${CLASSPATH}/updemails.jar ${PROPS_FILE} ${ERROR_FILE}
+
+retcode=`echo $?`
+case "${retcode}" in
+  0) echo "UpdatePatronEmail execution successful." ;;
+  1) echo "***** UpdatePatronEmail execution exited with error. *****" ;;
+  *) echo "***** UpdatePatronEmail: unknown return code. *****";;
+esac
+
+# Draw attention to error file, if present
+if [ -f ${ERROR_FILE} ]; then
+  echo "\n***** Look at error file ${ERROR_FILE} *****"
+fi

@@ -1,0 +1,69 @@
+#!/bin/sh
+
+# Sets up individual person-specific environment for git
+# so multiple people (akohler and drickard1967) can work
+# within the shared voyager environment, but keep their
+# commits separately and correctly attributed.
+
+# Relevant variables will be sourced into calling environment.
+
+#########################################################
+_clear_variables() {
+  # Clear all relevant variables
+  unset VGER_GIT_USER
+  unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL
+  unset GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
+  unset GIT_SSH
+
+  # Reset annoying git alias to block unconfigured use of git
+  # Couldn't get the original alias reset from source profiles so 
+  # be annoying in a different way.
+  alias git="printf 'ERROR: Please re-run correctly: source (or .) vger_git_config username\n'"
+}
+
+#########################################################
+
+# Main routine starts here.
+
+# Mandatory argument to determine person-specific user
+if [ -z "$1" ]; then
+  echo "Usage: source (or .) vger_git_config user (e.g., akohler or drickard1967)"
+  _clear_variables
+else
+  VGER_GIT_USER=$1
+  BIN=/usr/local/bin
+  GIT_SSH=${BIN}/vger_git_ssh
+
+  # Handle variant username flexibly.
+  # For our current Voyager workflow, AUTHOR and COMMITTER are the same person.
+  case ${VGER_GIT_USER} in
+    ak|akohler)
+      VGER_GIT_USER=akohler
+      GIT_AUTHOR_NAME="Andy Kohler"
+      GIT_AUTHOR_EMAIL=akohler@library.ucla.edu
+      GIT_COMMITTER_NAME=${GIT_AUTHOR_NAME}
+      GIT_COMMITTER_EMAIL=${GIT_AUTHOR_EMAIL}
+      # Configuration done, so remove the annoying git alias set up to point users to this script.
+      unalias git 2>/dev/null
+      ;;
+    dr|drickard|drickard1967)
+      VGER_GIT_USER=drickard1967
+      GIT_AUTHOR_NAME="David Rickard"
+      GIT_AUTHOR_EMAIL=drickard1967@library.ucla.edu
+      GIT_COMMITTER_NAME=${GIT_AUTHOR_NAME}
+      GIT_COMMITTER_EMAIL=${GIT_AUTHOR_EMAIL}
+      # Configuration done, so remove the annoying git alias set up to point users to this script.
+      unalias git 2>/dev/null
+      ;;
+    *)
+      echo "Invalid user ${VGER_GIT_USER} - exiting"
+      _clear_variables
+      ;;
+  esac
+
+
+  # Finally, export everything
+  export VGER_GIT_USER GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL
+  export GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
+  export GIT_SSH
+fi

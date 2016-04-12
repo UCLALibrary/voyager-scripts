@@ -1,0 +1,197 @@
+#!/bin/sh
+########################################
+# This script updates special tables of MARC data
+# preparsed into subfields for reporting.
+# Any user in the exlibris group can run this script.
+#
+# Revisions:
+#   20071205 akohler: Call vger_rebuild_948_archive after subfield db is updated
+#   20071211 akohler: Get password from vger_db_credentials
+########################################
+
+_show_usage() {
+  echo "\nUSAGE:"
+  echo "$0 database type [start_date] [end_date]"
+  echo "  where database is one of: ethnodb filmntvdb ucladb ALL"
+  echo "  and type is one of: auth bib mfhd ALL"
+  echo "start_date and end_date are optional; provide neither or both"
+  echo "start_date and end_date must be in YYYYMMDD format."
+  exit 1
+}
+
+########################################
+_create_ctl_file() {
+  CTLFILE=${OUTDIR}/${TABLE}.ctl
+  # Create control file for loading into oracle
+  (
+    echo "LOAD DATA"
+    echo "CHARACTERSET UTF8"
+    echo "APPEND"
+    echo "INTO TABLE ${TABLE}"
+    echo "FIELDS TERMINATED BY x'09'"
+    echo "TRAILING NULLCOLS"
+    echo "( record_id"
+    echo ", field_seq"
+    echo ", subfield_seq"
+    echo ", indicators"
+    echo ", tag"
+    echo ", subfield CHAR(9999)"
+    echo ")"
+  ) > ${CTLFILE}
+}
+
+########################################
+# Main routine starts here
+
+# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
+BIN=/usr/local/bin
+. ${BIN}/vger_getenv
+
+# Handle input parameters
+# Database is required; check user input, default to all databases if user doesn't specify
+if [ -n "$1" ]; then
+  DBLIST=$1
+  case ${DBLIST} in
+    ethnodb   ) ;;
+    filmntvdb ) ;;
+    ucladb    ) ;;
+    ALL       ) DBLIST="ethnodb filmntvdb ucladb" ;;
+    * ) _show_usage ;;
+  esac
+else
+  _show_usage
+fi
+
+# Type is required; check user input, default to all types if user doesn't specify
+if [ -n "$2" ]; then
+  TYPELIST=$2
+  case ${TYPELIST} in
+    auth ) ;;
+    bib  ) ;;
+    mfhd ) ;;
+    ALL  ) TYPELIST="auth bib mfhd" ;;
+    * ) _show_usage ;;
+  esac
+else
+  _show_usage
+fi
+
+# STARTDATE and ENDDATE are required; if user doesn't specify,
+# set STARTDATE=yesterday, ENDDATE=today
+if [ -n "$3" -a -n "$4" ]; then
+  STARTDATE=$3                  # Beginning date (inclusive)
+  ENDDATE=$4                    # Ending date (inclusive)
+else
+  ENDDATE=`date "+%Y%m%d"`	# YYYYMMDD
+  # Calculate STARTDATE = yesterday
+  DELTA=-1
+  # Clear out the commandline parms, else they get sent to vger_ymd_delta
+  while [ ! -z "$1" ]; do
+    shift
+  done
+
+  # Set YEAR, MONTH, DAY based on DELTA
+  . ${BIN}/vger_ymd_delta
+  STARTDATE=${YEAR}${MONTH}${DAY}
+fi
+
+# Other general settings
+SCHEMA=vger_subfields
+PWD=`${BIN}/get_value.pl ${BIN}/vger_db_credentials ${SCHEMA}`
+OUTDIR=/tmp
+
+# Loop through databases and types
+for DB in ${DBLIST}; do
+  for TYPE in ${TYPELIST}; do
+
+    # Loop-specific settings
+    TABLE=${DB}_${TYPE}_subfield
+    BASE=/m1/voyager/${DB}
+    case ${TYPE} in
+      auth) VGERTYPE=A ;;
+      bib ) VGERTYPE=B ;;
+      mfhd) VGERTYPE=H ;;
+      *   ) _show_usage ;;
+    esac
+
+    # Extract records added or changed during date range
+    # Endeavor docs say dates should have YYYY-MM-DD format, but YYYYMMDD works
+    # so using that since dates in other areas use that format.
+    echo "`date` Extracting records from Voyager..."
+    MARCFILE=${OUTDIR}/${DB}_${TYPE}_${STARTDATE}_${ENDDATE}.mrc
+    rm -f ${MARCFILE}
+    ${BASE}/sbin/Pmarcexport -o${MARCFILE} -r${VGERTYPE} -mB -t${STARTDATE}:${ENDDATE} -q
+
+    # remove Pmarcexport log
+    LOG=`ls -1rt ${BASE}/rpt/log.exp.* | tail -1`
+    rm ${LOG}
+
+    # Before loading data from new/changed records into subfield tables,
+    # need to remove existing data, for changed records and for deleted records.
+    # Get the record ids from extracted records and from Voyager's deleted.*.marc files
+    # Considerably faster this way than by using pure SQL to find and delete.
+    echo "\n`date` Removing subfields for changed and deleted records..."
+    DELFILE=${BASE}/rpt/deleted.${TYPE}.marc
+    IDFILE=${OUTDIR}/`basename ${MARCFILE} .mrc`.ids
+    IDSQLFILE=${IDFILE}.sql
+    rm -f ${IDFILE} ${IDSQLFILE}
+
+    # Get the record ids from the 001 fields
+    ${BIN}/vger_get_marc_ids_by_date.pl ${DELFILE} ${STARTDATE} ${ENDDATE} > ${IDFILE}
+    ${BIN}/vger_get_marc_ids_by_date.pl ${MARCFILE} ${STARTDATE} ${ENDDATE} >> ${IDFILE}
+#    ${BIN}/marcview ${DELFILE} | grep "^001" | cut -d":" -f2 > ${IDFILE}
+#    ${BIN}/marcview ${MARCFILE} | grep "^001" | cut -d":" -f2 >> ${IDFILE}
+
+    # Build a SQL script of delete commands; initial FEEDBACK OFF suppresses unneeded output
+    echo "set feedback off" > ${IDSQLFILE}
+    for ID in `cat ${IDFILE}`; do
+      echo "DELETE FROM ${TABLE} WHERE record_id = ${ID};" >> ${IDSQLFILE}
+    done
+    echo "QUIT;" >> ${IDSQLFILE}
+    # Run the SQL script to delete records
+    sqlplus -S ${SCHEMA}/${PWD} < ${IDSQLFILE}
+    rm -f ${IDFILE} ${IDSQLFILE}
+
+    # Parse marc file into subfields
+    echo "\n`date` Parsing marc records..."
+    SUBFIELDFILE=${OUTDIR}/`basename ${MARCFILE} .mrc`.txt
+    rm -f ${SUBFIELDFILE}
+    ${BIN}/build_marc_subfield_file ${MARCFILE} ${SUBFIELDFILE}
+
+    # Load data into Oracle database, in local schema & tablespace
+    # For these updates, use conventional path load to avoid index conflicts
+    # 20060215: set larger values for rows & bindsize (was using defaults)
+    echo "\n`date` Loading parsed subfields into Oracle..."
+    # Create control file for sqlldr, as CTLFILE
+    _create_ctl_file
+    sqlldr userid=${SCHEMA}/${PWD} control=${CTLFILE} direct=FALSE \
+      silent=\(HEADER, FEEDBACK\) \
+      bindsize=512000 \
+      rows=100 \
+      data=${SUBFIELDFILE} \
+      bad=${SUBFIELDFILE}.bad \
+      log=${SUBFIELDFILE}.log
+
+    # Include log info in output of this script
+    cat ${SUBFIELDFILE}.log
+
+    # Draw attention to "bad" file (data rejected by sqlldr), if present
+    if [ -f ${SUBFIELDFILE}.bad ]; then
+      echo "\n***** Look at ${SUBFIELDFILE}.bad *****\n"
+    fi
+
+    # Clean up
+    rm ${CTLFILE}
+    rm ${MARCFILE}
+    rm ${SUBFIELDFILE}
+    rm ${SUBFIELDFILE}.log
+
+    echo "`date` Finished updating ${TABLE} for ${STARTDATE}-${ENDDATE}"
+    echo "\n************************************************************"
+
+  done # TYPE loop
+done # DB loop
+
+# Rebuild the 948 cataloging archive, which depends on the subfield db
+${BIN}/vger_rebuild_948_archive
+

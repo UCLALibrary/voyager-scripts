@@ -1,0 +1,221 @@
+#!/bin/sh
+
+# Voyager housekeeping, run daily by root crontab
+# Back up Oracle and Voyager data to disk
+# As userid voyager, run acq, circ and patron jobs
+# Rotate and expire logs, reports and other files
+
+# This script can run only on collins or wells
+case `hostname` in
+collins )
+    SERVER=test			# test Oracle, Voyager and OPAC
+    ;;
+wells )
+    SERVER=prod			# production Oracle, Voyager and OPAC
+    ;;
+* )
+    echo "$0: this script can run only on collins or wells"
+    exit 1
+    ;;
+esac
+
+# Get VGER_BASE
+. /opt/local/bin/vger_voyenv
+
+# Get ORA_LOG ORA_HOME ORACLE_SID
+. /opt/local/bin/vger_getenv
+
+echo "\n`date` Step 1 of 16: Consider running /m1/utility/run_acct.ksh"
+# 2010-11-15 gloriar
+# /m1/utility/savecritical assumes a lot and does very little error checking
+# Rely on our own backups instead
+# Consider calling /m1/utility/run_acct.ksh before shutting down
+# Ex Libris installation adds it to voyager crontab, but we've commented it out
+#   50 23 * * * /m1/utility/run_acct.ksh
+# It creates a file in /export/home/voyager/logs and replaces
+#   /export/home/voyager/voyager_highwater.log
+
+echo "\n`date` Step 2 of 16: Stop Apache"
+/etc/init.d/httpd2 stop
+
+# Solaris 10: Ex Libris has supplied SMF-ized scripts in /etc/init.d
+#   but /etc/init.d/cognos doesn't use SMF
+echo "\n`date` Step 3 of 16: Stop cognos"
+/etc/init.d/cognos stop
+
+echo "\n`date` Step 4 of 16: Stop Voyager"
+/etc/init.d/voyager stop
+
+# 2014-05-07 akohler: Let's see what's still running for Voyager
+leftover_voyager_proc_list="`ps -fu voyager`"
+leftover_voyager_proc_cnt=`echo "$leftover_voyager_proc_list" | wc -l`
+if [ $leftover_voyager_proc_cnt -gt 1 ]  # count 1 for the header
+then
+    echo "Why didn't these voyager processes go away?"
+    echo "$leftover_voyager_proc_list"
+fi
+
+# 2010-11-18 akohler: Sometimes keysvr doesn't shut down cleanly;
+# per EL 16384-224864, OK to kill it
+# 2014-05-07 akohler: added the list of processes above to see if still needed
+pkill -9 keysvr
+
+echo "\n`date` Step 5 of 16: Stop Oracle and check for leftover processes"
+/etc/init.d/dbora stop
+
+# 2010-11-04 gloriar
+# Occasionally MRDN or VGER will fail to stop, which puts the service into maintenance mode
+# Search for "Couldn't" in /var/svc/log/*Oracle*
+# Sometimes caused by leftover processes owned by oracle
+leftover_oracle_proc_list="`ps -fu oracle`"
+leftover_oracle_proc_cnt=`echo "$leftover_oracle_proc_list" | wc -l`
+if [ $leftover_oracle_proc_cnt -gt 1 ]	# count 1 for the header
+then
+    echo "Why didn't these oracle processes go away?"
+    echo "$leftover_oracle_proc_list"
+fi
+
+echo "\n`date` Step 6 of 16: Create snapclones"
+/opt/local/bin/vger_snapclone
+
+echo "\n`date` Step 7 of 16: If there were leftover processes, clear VGER and MRDN"
+# 2010-11-04 gloriar
+# If there were leftover oracle processes, clearing the maintenance mode
+#   might be enough to get things started again
+if [ $leftover_oracle_proc_cnt -gt 1 ]	# count 1 for the header
+then
+    /usr/sbin/svcadm clear VGER
+    /usr/sbin/svcadm clear MRDN
+fi
+
+echo "\n`date` Step 8 of 16: Rotate and expire logs, reports and other files"
+# Some logs can't be rotated until everything is down
+vger_daily_all_down=1 /usr/local/bin/vger_daily_rotate_expire
+unset vger_daily_all_down
+
+echo "\n`date` Step 9 of 16: Start Oracle"
+/etc/init.d/dbora start
+# Rebuild the Oracle temp tablespace for the VGER instance (MRDN currently ignored)
+su - oracle -c "/opt/local/bin/vger_rebuild_temp_tablespace" 2>&1
+
+echo "\n`date` Step 10 of 16: Start Voyager"
+# 2010-11-04 akohler: temporary hack, in case VGER did not start correctly
+#   for some reason other than leftover oracle processes
+if /opt/local/bin/vger_check_services VGER; then
+  :
+else
+  echo "Why was it necessary to clear VGER?"
+  /usr/sbin/svcadm clear VGER
+  sleep 30
+fi
+/opt/local/bin/vger_check_services olisten
+/opt/local/bin/vger_check_services VGER
+/etc/init.d/voyager start
+
+echo "\n`date` Step 11 of 16: Start cognos"
+# 2010-11-02 akohler: temporary hack, as MRDN has not been starting correctly
+#  since 2010-11-01 reboot of wells.
+if /opt/local/bin/vger_check_services MRDN; then
+  :
+else
+  echo "Why was it necessary to clear MRDN?"
+  /usr/sbin/svcadm clear MRDN
+  sleep 30
+fi
+/opt/local/bin/vger_check_services olisten
+/opt/local/bin/vger_check_services MRDN
+# Solaris 10: Ex Libris has supplied SMF-ized scripts in /etc/init.d
+#   but /etc/init.d/cognos doesn't use SMF
+/etc/init.d/cognos start
+
+echo "\n`date` Step 12 of 16: Start Apache"
+# 2013-09-24 gloriar: Every time we shut down Apache on wells, but not on collins,
+#   it goes into maintenance state. For example
+#   /var/svc/log/site-ExLibris-Apache-httpd2:apache2.log
+#       [ Sep 23 03:15:00 Executing stop method ("/m1/shared/apache2/bin/apachectl stop") ]
+#       [ Sep 23 03:15:01 Method "stop" exited with status 0 ]
+#       [ Sep 23 03:16:00 Method or service exit timed out.  Killing contract 586594 ]
+#   /m1/shared/httpd/2.2.22/logs/error_log.20130923-031803
+#       [Mon Sep 23 03:15:02 2013] [notice] caught SIGTERM, shutting down
+# Sometimes Apache error_log notes that a process wouldn't stop
+#   [Tue Sep 24 03:15:04 2013] [warn] child process 17749 still did not exit, sending a SIGTERM
+#   [Tue Sep 24 03:15:06 2013] [warn] child process 17749 still did not exit, sending a SIGTERM
+#   [Tue Sep 24 03:15:08 2013] [warn] child process 17749 still did not exit, sending a SIGTERM
+#   [Tue Sep 24 03:15:10 2013] [error] child process 17749 still did not exit, sending a SIGKILL
+#   [Tue Sep 24 03:15:11 2013] [notice] caught SIGTERM, shutting down
+# According to /var/log/daemonlog, pid 17749 had been running since two days before?
+#   Sep 22 17:30:11 wells inetd[965]: [ID 317013 daemon.notice] ucladb_Popacsvr[17749] from 127.0.0.1 53935
+# More from /var/log/daemonlog
+#   Sep 24 03:14:58 wells inetd[965]: [ID 317013 daemon.notice] ucladb_Pkeysvr[3471] from 127.0.0.1 53311
+#   Sep 24 03:14:58 wells inetd[965]: [ID 317013 daemon.notice] ucladb_Pkeysvr[3474] from 127.0.0.1 53312
+#   Sep 24 03:16:00 wells svc.startd[843]: [ID 122153 daemon.warning] svc:/site/ExLibris/Apache/httpd2:apache2: Method or service exit timed out.  Killing contract 609057.
+#   Sep 24 03:16:00 wells svc.startd[843]: [ID 748625 daemon.error] site/ExLibris/Apache/httpd2:apache2 failed: transitioned to maintenance (see 'svcs -xv' for details)
+#
+# Do the defunct pids have anything to do with it?
+#   voyager 23087  7883   0        - ?           0:00 <defunct>
+# pid and ppid are in /var/log/daemonlog, but are they the right ones?
+#   Sep 23 16:32:58 wells inetd[965]: [ID 317013 daemon.notice] ucladb_Pkeysvr[23087] from 127.0.0.1 41089
+#   Sep 24 00:28:04 wells inetd[965]: [ID 317013 daemon.notice] ucladb_Pkeysvr[7883] from 127.0.0.1 42263
+# Better pid is in log.voyager, but today's ppid should be 8026 (see extract from ptree)
+#   z3950svr[23087] - ERROR - Tue Sep 24 06:53:40 2013
+#           - ZSESSION::ReadPDU - zsession.cpp[141]
+#           Peer closed connection.
+# Extract from ptree
+#   8026  /m1/voyager/bin/2008.2.0/z3950svr -i /m1/voyager/ucladb/ini/z3950svr.ini 
+#    21651 /m1/voyager/bin/2008.2.0/z3950svr -i /m1/voyager/ucladb/ini/z3950svr.in
+#    25457 /m1/voyager/bin/2008.2.0/z3950svr -i /m1/voyager/ucladb/ini/z3950svr.in
+# keysvr has no children, and its ppid today (Sep 24) is inetd [965]
+#
+# 2011-05-10 gloriar
+# Occasionally Apache is so busy that "svcadm disable ...httpd2" in
+#   /etc/init.d/httpd2 times out, placing it in maintenance state, where it
+#   won't start.
+# For example
+#   Mon May  9 03:15:01 PDT 2011 Step 2 of 16: Stop Apache
+#   /var/svc/log/site-ExLibris-Apache-httpd2:apache2.log
+#	[ May  9 03:15:07 Executing stop method
+#			  ("/m1/shared/apache2/bin/apachectl stop") ]
+#	[ May  9 03:15:08 Method "stop" exited with status 0 ]
+#   /m1/shared/httpd/2.2.6/logs/error_log.20110509-031936
+#	[ May 09 03:15:16 ] [warn] child process 2197 still did not exit,
+#			  sending a SIGTERM
+#	[ May 09 03:15:24 ] [notice] caught SIGTERM, shutting down
+#   /var/svc/log/site-ExLibris-Apache-httpd2:apache2.log
+#	[ May  9 03:16:10 Method or service exit timed out.  Killing contract
+#			  1145331 ]
+# Don't check for this condition: just clear the maintenance state
+/usr/sbin/svcadm clear ExLibris/Apache/httpd2
+# 2013-09-23 gloriar: Try to avoid seeing "offline*" status when we run
+#   /opt/local/bin/vger_check_services (just after starting Apache)
+sleep 1
+/etc/init.d/httpd2 start
+# Check status of everything at this point
+/opt/local/bin/vger_check_services voyager
+
+# Circ jobs, acq jobs and general cleanup even if no backup or restart
+if [ $SERVER = prod ]
+then
+  # 2010-09-29 akohler: Proceed only if Voyager-specific services are running
+  # 2013-01-09 akohler: httpd doesn't need to be running, but Voyager (Global_bin) does
+  if /opt/local/bin/vger_check_services Global_bin; then
+    echo "\n`date` Step 13 of 16: Circ jobs"
+    su - voyager -c "/opt/local/bin/vger_circjobs"
+
+    echo "\n`date` Step 14 of 16: Acq jobs"
+    su - voyager -c "/opt/local/bin/vger_acqjobs"
+
+    echo "\n`date` Step 15 of 16: Patron update"
+    echo "vger_patron scheduled separately via cron 2016-04-07+"
+    #####su - voyager -c "/opt/local/bin/vger_patron"
+  else
+    echo "\n`date` Step 13 of 16: Circ jobs skipped when Voyager not up"
+    echo "\n`date` Step 14 of 16: Acq jobs skipped when Voyager not up"
+    echo "\n`date` Step 15 of 16: Patron update skipped when Voyager not up"
+  fi
+else
+  echo "\n`date` Step 13 of 16: Circ jobs skipped on test server"
+  echo "\n`date` Step 14 of 16: Acq jobs skipped on test server"
+  echo "\n`date` Step 15 of 16: Patron update skipped on test server"
+fi
+
+echo "\n`date` Step 16 of 16: Finished"

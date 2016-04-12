@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ "$1" ]; then
+  /m1/voyager/ucladb/edi/scripts/dump_edi.pl $1
+else
+  echo "Usage: $0 edifile"
+fi
+

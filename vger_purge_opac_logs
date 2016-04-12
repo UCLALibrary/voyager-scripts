@@ -1,0 +1,61 @@
+#!/bin/sh
+# Removes entries from Voyager OPAC log tables in Oracle
+#   for year and month specified.
+# By default applies to all 3 production Voyager databases,
+#   but can run for 1 specific database via parameter.
+
+# Get environment for cron
+BIN=/opt/local/bin
+. ${BIN}/vger_getenv
+
+if [ -z "$2" ]; then
+  echo "Usage: $0 yyyy mm [db]"
+  echo "If specified, db must be one of ethnodb filmntvdb ucladb."
+  exit 1
+else
+  YEAR=$1
+  MONTH=$2
+  if [ "$3" ]; then
+    DBLIST=$3
+  else
+    DBLIST="ethnodb filmntvdb ucladb"
+  fi
+fi
+
+for DB in ${DBLIST}; do
+  # Copy data to archive database table
+  YYYYMM=${YEAR}${MONTH} 
+  SQLFILE=/tmp/purge_${DB}_${YYYYMM}.sql
+  OUTFILE=${SQLFILE}.out
+
+  (
+    echo "set verify on;"
+    echo "set feedback on;"
+    echo "insert into vger_report.${DB}_opac_search_log"
+    echo "select * from ${DB}.opac_search_log"
+    echo "where trunc(search_date, 'MM') = to_date('${YYYYMM}', 'YYYYMM');"
+    echo "commit;"
+  ) > ${SQLFILE}
+
+  ${BIN}/vger_sqlplus_run vger_report ${SQLFILE}
+  # Look at the log
+  cat ${OUTFILE}
+  # Clean up
+  rm ${SQLFILE} ${OUTFILE}
+
+  # Run Voyager program to purge data from OPAC log table
+  BASE=/m1/voyager/${DB}
+  RPT=${BASE}/rpt
+  SBIN=${BASE}/sbin
+  SIF=${RPT}/opaclog_${YEAR}${MONTH}.sif
+
+  # At end of loop, LDAY contains final day of month
+  for LDAY in `cal $MONTH $YEAR` ; do : ; done
+
+  ${SBIN}/Popacjob -j1 -o${SIF} -r${YEAR}-${MONTH}-01:${YEAR}-${MONTH}-${LDAY} -p
+  # Count lines in exported data - should be the same as rows inserted in above SQL
+  #   but can vary slightly due to line breaks in Voyager-exported data
+  wc -l ${SIF}
+  # Compress exported data; will be backed up on tape, then could be deleted later
+  gzip -9 ${SIF}
+done

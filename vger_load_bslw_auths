@@ -1,0 +1,93 @@
+#!/bin/sh
+
+# Loads authority records from BSLW into Voyager
+# Applies only to ucladb
+
+. /usr/local/bin/vger_getenv
+
+# Generic function for exiting on errors
+_error_exit () {
+  echo "$1"
+  exit 1
+}
+
+DB=ucladb
+DIR=/m1/voyager/${DB}/local/bslw/auth_load
+SCRIPTDIR=/m1/voyager/${DB}/local/bslw/scripts
+
+# Appears that sh exits immediately if builtin cd fails?
+cd ${DIR} || _error_exit "Can't cd to ${DIR} - exiting"
+
+# Split MARC files from BSLW based on contents 
+for FILE in *.mrc; do 
+  BASE=`basename ${FILE} .mrc`
+  # Set values based on whether file contains new or changed records
+  case ${BASE} in
+    chg|mesh.chg )
+      echo "${FILE} : splitting..."
+      ${SCRIPTDIR}/split_bslw_15x.pl ${FILE} ${BASE}_15x.mrc ${BASE}_no15x_overlay.mrc ${BASE}_no15x_review.mrc
+      ;;
+    new|mesh.new )
+      echo "${FILE} : splitting..."
+      ${SCRIPTDIR}/split_bslw_130.pl ${FILE} ${BASE}_130.mrc ${BASE}_no130.mrc
+      ;;
+    * ) 
+      # do nothing - loop to next file
+      continue
+      ;;
+  esac
+done
+
+# Load appropriate files in Voyager
+echo ""
+for LOADFILE in *.mrc; do
+  case ${LOADFILE} in
+    *130.mrc ) PROFILE=BSLWA130 ;;
+    *_15x.mrc ) PROFILE=BSLWA15X ;;
+    *no15x_overlay.mrc ) PROFILE=BSLWMERG ;;
+    * )
+      # Some files don't get loaded; show a message and skip to next file
+      echo "${LOADFILE} : skipped, no profile"
+      continue
+      ;;
+  esac
+
+  if [ -s ${LOADFILE} ]; then
+    echo "${LOADFILE} : loading with profile ${PROFILE}..."
+    /opt/local/bin/vger_bulkimport_file ${LOADFILE} ${DB} ${PROFILE}
+
+    # Rename log file
+    if [ -f log.imp.${LOADFILE}.bulk ]; then
+      NEWFILE=`basename ${LOADFILE} .mrc`.log
+      mv log.imp.${LOADFILE}.bulk ${NEWFILE}
+    fi
+
+    # Rename file of rejected records
+    if [ -f discard.imp.${LOADFILE}.bulk ]; then
+      NEWFILE=`basename ${LOADFILE} .mrc`.rej.mrc
+      mv discard.imp.${LOADFILE}.bulk ${NEWFILE}
+    fi
+
+    # Rename file of replaced records
+    if [ -f replace.imp.${LOADFILE}.bulk ]; then
+      NEWFILE=`basename ${LOADFILE} .mrc`.replace.mrc
+      mv replace.imp.${LOADFILE}.bulk ${NEWFILE}
+    fi
+
+  else
+    echo "${LOADFILE} : skipped empty file"
+  fi
+done
+
+# The above splitting / loading processes created some new MARC files
+# Loop through all, deleting empty files and creating text versions of the rest
+echo ""
+for FILE in *.mrc; do
+  if [ -s ${FILE} ]; then
+    /opt/local/bin/marcview ${FILE} > `basename ${FILE} .mrc`.txt
+  else
+    echo "${FILE} : deleted empty file"
+    rm ${FILE}
+  fi
+done
+

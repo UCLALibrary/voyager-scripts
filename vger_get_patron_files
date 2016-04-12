@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Retrieve files used to update Voyager patrons
+
+# Everything goes in here
+DIR=/m1/voyager/ucladb/local/patron
+
+cd ${DIR}
+
+# Bruincard data: current level of issue
+# 20150916 drickard updated for sftp, file name
+(
+  echo "cd /onecard"
+  echo "get Bruincard.txt bruincard_data.txt"
+  echo "bye"
+) | sftp bcard@bc-sftp.library.ucla.edu
+
+# Faculty and staff email addresses
+## extra logic to handle server switch coming 20130223 drickard
+BIN=/opt/local/bin
+USER=ext_dir_ret9
+PWD=`${BIN}/get_value.pl ${BIN}/ais_credentials ${USER}`
+(
+  echo "user ${USER} ${PWD}"
+  echo "ascii"
+# remove following line--get direct access to file directory
+#  echo "cd /private/dir-ret9"
+#twits changed file name slightly
+  echo "get FS-id.sdf fsemail_data.txt"
+#  echo "get fs-id.sdf fsemail_data.txt"
+  echo "bye"
+) | ftp -n -v fx.it.ucla.edu #ftp -i -v ftp.cts.ucla.edu
+
+# Registrar data: current students
+# 20091026 akohler: switched from ftp to srdb/sql for registrar data
+#(
+#  echo "ascii"
+#  echo "cd /incoming/registrar"
+#  echo "get V022SRSFILE registrar_data.txt"
+#  echo "bye"
+#) | ftp -i -v ftp.library.ucla.edu
+
+/m1/voyager/ucladb/local/patron/bin/get_registrar_data
+
+### QDB data is queried from a separate process at 11:30 PM ###

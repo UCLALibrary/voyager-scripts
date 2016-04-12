@@ -1,0 +1,117 @@
+#!/bin/ksh
+#
+#       Author: David A. Dempsey
+#
+#       Date:   10/18/02
+#
+#       Purpose:
+#		Count and report Voyager and Oracle activity
+#
+#       Syntax: 
+#               newvs [-q]
+#
+#       Options:
+#		-q only check for non-local Oracle connections,
+#		setting return code 1 if any found. Very fast.
+#
+#	BUILD: 20040128
+#
+#
+#       Change:
+#               12/31/03
+#               Update for Linux and AIX OS. Digital systems
+#               might not have a voyager user.
+#       Change:
+#               01/28/04 - Tom Pitts
+#               Update to include the nobody user so webrecon 
+#               processes can be tracked.
+#
+#       Change:
+#               20090520 akohler
+#               Filter out awk from ps output, otherwise first part
+#               of awk script is counted as an ascopac process
+#               when newvs is run as voyager.
+#               Original /m1/utility/newvs unchanged; change is only
+#               in local copy /opt/local/bin/vger_newvs
+if [[ $1 = '-q' ]]
+  then
+    ps -u oracle -o args | awk '/LOCAL=NO/ {exit 1}'
+  else
+    clear
+    printf "======================================================\n"
+    if [[ $(uname -s) = SunOS ]]
+      then
+         printf "Voyager status requested by user: $(/usr/xpg4/bin/id -un)\n"
+      else
+         printf "Voyager status requested by user: $(/usr/bin/id -un)\n"
+    fi
+    printf "======================================================\n"
+    printf "$(date) on $(uname -n)\n$(uname -rsv)\n$(uptime)\n\n"
+    if [[ -d /m1/voyager ]]
+      then
+        psargs=voyager,oracle,nobody
+      else
+        psargs=oracle
+    fi
+    ps -u $psargs -o args | grep -v awk | awk '/ascopac/ {asco++;next}
+/opacsvr/ {opacs++;next}
+/webrecon/ {webr++;next}
+/z3950svr/ {z3950++;next}
+/catsvr/ {cats++;next}
+/acqsvr/ {acqs++;next}
+/circsvr/ {circs++;next}
+/sysadminsvr/ {sysad++;next}
+/keysvr/ {keys++;next}
+/callslip/ {calls++;next}
+/filesvr/ {files++;next}
+/mediasvr/ {medias++;next}
+/iasock/ {iasock++;next}
+/scansvr/ {scans++;next}
+/selfchk/ {selfc++;next}
+/ncipsvr/ {ncips++;next}
+#  look for batch jobs
+/circjob/ {circb++;next}
+/catjob/ {catb++;next}
+/acqjob/ {acqb++;next}
+/bulkimp/ {bulk++;next}
+/marcexp/ {marce++;next}
+/mediajob/ {mediab++;next}
+/patrnup/ {patrn++;next}
+#  look at Oracle counts
+/LOCAL=YES/ {olocal++;next}
+/LOCAL=NO/ {onolocal++}
+END { 
+if (asco != 0) printf("%-30s%4d\n","ASCII Processes",asco)
+if (opacs != 0) printf("%-30s%4d\n","OPAC Servers",opacs)
+if (webr != 0) printf("%-30s%4d\n","Webrecon Processess",webr)
+if (z3950 != 0) printf("%-30s%4d\n","Z3950 Servers",z3950)
+# subtotal
+printf("\n\t%-40s%5d\n\n","TOTAL OPAC servers running:",asco+opacs+webr+z3950)
+#
+if (cats != 0) printf("%-30s%4d\n","Catalog Servers",cats)
+if (acqs != 0) printf("%-30s%4d\n","Acquisition Servers",acqs)
+if (circs != 0) printf("%-30s%4d\n","Circulation Servers",circs)
+if (sysad != 0) printf("%-30s%4d\n","Sysadmin Servers",sysad)
+if (keys != 0) printf("%-30s%4d\n","Keyword Servers",keys)
+if (files != 0) printf("%-30s%4d\n","File Servers",files)
+if (calls != 0) printf("%-30s%4d\n","Callslip Daemons",calls)
+if (circb != 0) printf("%-30s%4d\n","Circulation Jobs",circb)
+if (catb != 0) printf("%-30s%4d\n","Cataloging Jobs",catb)
+if (acqb != 0) printf("%-30s%4d\n","Acquisition Jobs",acqb)
+if (bulk != 0) printf("%-30s%4d\n","Bulkimport Jobs",bulk)
+if (patrn != 0) printf("%-30s%4d\n","Praton Update Jobs",patrn)
+if (marce != 0) printf("%-30s%4d\n","MARC Export Jobs",marce)
+if (medias != 0) printf("%-30s%4d\n","Media Servers",medias)
+if (mediab != 0) printf("%-30s%4d\n","Media jobs",mediab)
+if (iasock != 0) printf("%-30s%4d\n","ImageServer Sockets",iasock)
+if (scans != 0) printf("%-30s%4d\n","Scan Servers",scans)
+if (selfc != 0) printf("%-30s%4d\n","3M Self-Check Servers",selfc)
+if (ncips != 0) printf("%-30s%4d\n","NCIP Servers",ncips)
+printf("\n\t%-40s%5d\n\n","Total Voyager processes running:",asco+opacs+webr+z3950+cats+acqs+circs+sysad+keys+files+calls+circb+catb+acqb+bulk+patrn+marce+medias+mediab+iasock+scans)
+if (olocal != 0) printf("%-30s%4d\n","Oracle local connections",olocal)
+if (onolocal != 0) printf("%-30s%4d\n","Oracle remote connections",onolocal)
+printf("\n\t%-40s%5d\n","Total Oracle connections:",olocal+onolocal)
+print "======================================================\n"
+if (onolocal != 0) exit 1
+}'
+fi

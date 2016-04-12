@@ -1,0 +1,68 @@
+#!/bin/sh
+# Check ratio of dynamic to static keyword index files
+# If ratio is above a threshold, a regen is needed
+
+#####################
+# Calculate ratio of dynamic to static keyword files
+# Uses $DB and $TYPE from main script.
+# Sets $RATIO which main script then uses.
+_get_ratio() {
+  if [ ${TYPE} = bib ]; then
+    DATADIR=${VGER_BASE}/${DB}/data
+  else
+    DATADIR=${VGER_BASE}/${DB}/mfhd.data
+  fi
+  # Size of dynamic file (only one), but may be named
+  #  dynamic.dc (bib) or dynamic.mfhd.dc (mfhd)
+  DYNSIZE=`ls -l ${DATADIR}/dynamic*.dc | awk '{print $5}'`
+  # Size of first static file (a db may have several)
+  STATSIZE=`ls -l ${DATADIR}/${DB}*.dc | head -1 | awk '{print $5}'`
+  RATIO=`expr 100 \* ${DYNSIZE} / ${STATSIZE}`
+}
+
+#####################
+# Main script starts here
+
+# For cron, VGER_BASE
+BIN=/opt/local/bin
+. ${BIN}/vger_getenv
+
+echo "\nChecking sizes of production keyword indexes:"
+# Check production databases
+for DB in ethnodb filmntvdb ucladb; do
+  for TYPE in bib mfhd; do
+    _get_ratio
+    # Above threshold, performance starts to deteriorate
+    # * Mfhds have higher threshold than bibs
+    # * ethnodb has higher threshold for both bibs/mfhds (small db = naturally high ratio)
+    if [ ${TYPE} = bib ]; then
+      if [ ${DB} = ethnodb ]; then
+        THRESHOLD=50
+      else
+        THRESHOLD=30
+      fi
+    else # mfhd
+      if [ ${DB} = ethnodb ]; then
+        THRESHOLD=200
+      else
+        THRESHOLD=50
+      fi
+    fi
+
+    # Set regen script
+    if [ ${DB} = ucladb -a ${TYPE} = bib ]; then
+      REGEN_SCRIPT=vger_keyword_regen_parallel
+    else
+      REGEN_SCRIPT=vger_keyword_regen
+    fi
+
+    echo "${DB} ${TYPE} keyword dynamic/static ratio is ${RATIO}"
+    if [ ${RATIO} -gt ${THRESHOLD} ]; then
+      echo "\tRunning regen for ${DB} ${TYPE}..."
+      echo "\tStart: `date`"
+      ${BIN}/${REGEN_SCRIPT} ${DB} ${TYPE}
+      echo "\tEnd  : `date`"
+    fi
+  done # for TYPE
+done # for DB
+

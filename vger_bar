@@ -1,0 +1,147 @@
+#!/bin/sh
+############################################################
+# Send Voyager fine/fee information to BAR and post in 
+# Voyager.
+#
+# Last revised: 2008-08-16 chunt
+############################################################
+
+_show_usage() {
+  echo "\nUSAGE:"
+  echo "$0"
+  exit 1
+}
+
+########################################
+# Main routine starts here
+
+DIR=/m1/voyager/ucladb/local/circ
+BAR_FILE_FULL_PATH=$DIR/ucla.libr.br0.0001.txt
+# To prevent extra lines in data output:
+SQLPLUS_RECSEP=off
+export SQLPLUS_RECSEP
+
+# No input parameters are necessary. 
+# If any are provided show usage and exit.
+if [ -n "$1" ]; then
+  _show_usage
+  exit
+fi
+
+echo "***** Begin daily BAR process. *****"
+# Refund any charges on returned items.
+/opt/local/bin/vger_sqlplus_run vger_support $DIR/daily-refund_bar_charges_on_returned_items
+if [ -s "$DIR/daily-refund_bar_charges_on_returned_items.out" ]; then
+  RETURN_REFUNDS=`wc -l $DIR/daily-refund_bar_charges_on_returned_items.out|cut -c1-8` ;
+  echo "Refunding $RETURN_REFUNDS charges on returned items." ;
+  /opt/local/bin/vger_addfeepost $DIR/daily-refund_bar_charges_on_returned_items.out $DIR/daily-refund_bar_charges_on_returned_items.err ;
+  mv $DIR/daily-refund_bar_charges_on_returned_items.out $DIR/daily-refund_bar_charges_on_returned_items.out.`date "+%Y%m%d"`
+else
+  echo "No returned items to refund charges for."
+fi
+
+# Update manual BAR reversals.
+if [ -f "$DIR/update_manual_bar_reversals.out" ]; then
+  rm $DIR/update_manual_bar_reversals.out
+fi
+
+/opt/local/bin/vger_sqlplus_run ucladb $DIR/update_manual_bar_reversals
+
+if [ -s "$DIR/update_manual_bar_reversals.out" ]; then
+  echo "*** Error: Check $DIR/update_manual_bar_reversals.out ***" ;
+  exit
+fi
+
+NON_HOLIDAY_WEEKDAY=`$DIR/bin/non_holiday_weekday`
+
+# Non-holiday weekdays (when BAR is processed) are handled differently
+# from weekends and holidays (when BAR is not processed).
+# Bursar Refunds are not extracted on non-holiday weekdays and the 
+# batch file is not uploaded to BAR.
+
+if [ $NON_HOLIDAY_WEEKDAY = "True" ]
+then
+  #
+  # For non-holiday weekdays extract charges and reversals.
+  #
+  # Prepare the records that will go into the file sent to BAR.
+  /opt/local/bin/vger_sqlplus_run vger_support $DIR/bar_charges_and_reversals
+  # There may be entries from previous runs if the file hasn't been 
+  # uploaded yet so we append to the existing file.
+  LINES=`wc -l $DIR/bar_charges_and_reversals.out|cut -c1-8`
+  if [ "$LINES" = "       1" ]; then
+    echo "No new charges or reversals to put into the BAR batch file."
+  else
+    CHARGES=`grep "^65A" $DIR/bar_charges_and_reversals.out |grep -v ":" |wc -l` ;
+    REVERSALS=`grep "^65C" $DIR/bar_charges_and_reversals.out|wc -l` ;
+    echo "Putting $CHARGES charges and $REVERSALS reversals into BAR batch file." ;
+    cut -c1-128 $DIR/bar_charges_and_reversals.out >> $BAR_FILE_FULL_PATH
+  fi
+else
+  #
+  # For holidays and weekends only extract charges.
+  #
+  # Prepare the records that will go into the file sent to BAR.
+  /opt/local/bin/vger_sqlplus_run vger_support $DIR/bar_charges
+  # There may be entries from previous runs if the file hasn't been 
+  # uploaded yet so we append to the existing file.
+  LINES=`wc -l $DIR/bar_charges.out|cut -c1-8`
+  if [ "$LINES" = "       1" ]; then
+    echo "No new charges to put into the BAR file."
+  else
+    CHARGES=`grep "^65A" $DIR/bar_charges.out |grep -v ":" |wc -l` ;
+    echo "Putting $CHARGES charges into BAR batch file." ;
+    cut -c1-128 $DIR/bar_charges.out >> $BAR_FILE_FULL_PATH
+  fi
+fi
+
+# Post the charges to Voyager.
+/opt/local/bin/vger_sqlplus_run vger_support $DIR/post_bar_charges
+if [ -s "$DIR/post_bar_charges.out" ]; then
+  POST_CHARGES=`wc -l $DIR/post_bar_charges.out|cut -c1-8` ;
+  echo "Posting $POST_CHARGES new charges to Voyager." ;
+  /opt/local/bin/vger_addfeepost $DIR/post_bar_charges.out $DIR/post_bar_charges.err ;
+  mv $DIR/post_bar_charges.out $DIR/post_bar_charges.out.`date "+%Y%m%d"`
+else
+  echo "No new charges to post to Voyager."
+fi
+
+if [ $NON_HOLIDAY_WEEKDAY = "True" ]
+then
+  #
+  # For non-holiday weekdays update the note field of Bursar Refunds 
+  # to reflect they've been sent to BAR.
+  #
+  if [ -f "$DIR/update_bar_reversals.out" ]; then
+    rm $DIR/update_bar_reversals.out
+  fi
+
+  echo "It's a non-holiday weekday so BAR reversals will be updated in Voyager."
+  /opt/local/bin/vger_sqlplus_run ucladb $DIR/update_bar_reversals
+
+  if [ -s "$DIR/update_bar_reversals.out" ]; then
+    echo "*** Error: Check $DIR/update_bar_reversals.out ***" ;
+    exit
+  fi
+fi
+
+if [ $NON_HOLIDAY_WEEKDAY = "True" ]
+then
+  #
+  # For non-holiday weekdays upload the batch file to BAR.
+  #
+  echo "It's a non-holiday weekday so uploading the file to BAR."
+  $DIR/bin/upload_bar_file
+else
+  #
+  # For holidays and weekends do not upload the batch file to BAR.
+  #
+  echo "It's a weekend day or a holiday so not uploading the file to BAR."
+fi
+
+echo "***** End daily BAR process. *****"
+
+# 2009-08-06 added lines to remove old output files every quarter drickard
+find ${DIR} -type f -name 'daily-refund_bar_charges_on_returned_items.out.*' -mtime +90 -exec rm {} \;
+find ${DIR} -type f -name 'post_bar_charges.out.*' -mtime +90 -exec rm {} \;
+

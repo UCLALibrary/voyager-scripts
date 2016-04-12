@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# Check to see if UCLA Z39.50 server master process (PPID=1) is running
+# Restart it if it is not
+#
+# Last revised: 2007-08-28 akohler
+
+# Get voyager environment for cron
+. /opt/local/bin/vger_getenv
+
+# Check to see if ucla z39.50 parent process is running (ppid = 1)
+PS=`ps -ef -o ppid,args | grep z39 | grep ucladb | grep "^    1"`
+# Capture return code from final grep
+RC=$?
+
+# Basic info for logging
+echo `date ` ${PS}
+
+# If grep found no processes, start one up
+if [ ${RC} -eq 1 ]; then
+  echo "Parent z39.50 server not running; restarting"
+  /m1/voyager/ucladb/sbin/Pz3950svr
+  # Immediate alert if restart
+  echo | mailx -s "Z39.50 server restarted" lit-libweb@library.ucla.edu
+fi
+

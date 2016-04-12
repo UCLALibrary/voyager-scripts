@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# Facilities:   kern            Priorities:     emerg
+#               user            (highest first) alert
+#               mail                            crit
+#               daemon                          err
+#               auth                            warning
+#               syslog                          notice
+#               lpr                             info
+#               mark (timestamps)               debug
+#               news
+#               uucp
+#               cron                            none
+#               local0..7                [don't send any messages]
+# Monitor size (Kb) of virtual memory used
+# Append to /var/adm/messages
+# Feb  8 10:01:59 carroll vger_vmem: [ID 702911 user.alert] 10243112
+/usr/bin/expr 0 `/usr/bin/ps -e -o vsz="" | /usr/bin/sed 's/^/+ /'` | \
+    /usr/bin/logger -t`/usr/bin/basename $0` -p user.alert 

@@ -1,0 +1,115 @@
+#!/bin/ksh
+############################################################
+# This script runs sqlplus using the provided schema.
+#
+# - "schema" is schema only, not USERNAME/PASSWORD
+# - allows optional parameters to sqlplus
+# - linesize and recsep parameters can be set from env variables
+# - allows db credentials stored in other files.
+############################################################
+
+_show_usage() {
+  echo "\nUSAGE:"
+  echo "$0 schema name"
+  echo "  where schema is the username used to access the database"
+  echo "  and \${name}.sql is the script file to run."
+  echo "  Output is to \${name}.out."
+  exit 1
+}
+
+########################################
+# Main routine starts here
+
+# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
+BIN=/usr/local/bin
+. ${BIN}/vger_getenv
+
+# Handle input parameters
+# schema is required.
+if [ -n "$1" ]; then
+  SCHEMA=$1
+  PASSWORD=`/opt/local/bin/get_value.pl /opt/local/bin/vger_db_credentials $SCHEMA`
+  if [ "$PASSWORD" = "" ]; then
+    case $SCHEMA in
+      ethnodb|filmntvdb|ucladb) 
+        . /m1/voyager/$SCHEMA/ini/voyager.env
+        CREDENTIALS=$USERPASS
+        ;;
+      *) ERROR="credentials not found" ;;
+    esac
+  else
+    CREDENTIALS=$SCHEMA/$PASSWORD
+  fi
+else
+  _show_usage
+  exit
+fi
+
+# script is required.
+if [ -n "$2" ]; then
+  SCRIPT=$2
+  OUTPUT=$2.out
+  # If we can't read SCRIPT, try SCRIPT.sql
+  if [ ! -r ${SCRIPT} ]; then
+    SCRIPT=${SCRIPT}.sql
+  fi
+  # Still can't read SCRIPT?  Alert and exit
+  if [ ! -r ${SCRIPT} ]; then
+    echo SQL script $2 or ${SCRIPT} must exist and be readable.
+    exit
+  fi
+else # no script parameter provided
+  _show_usage
+  exit
+fi
+
+# if there are more parameters, save them for input to the sql script
+if [ -n "$3" ]; then
+  shift #skip $1
+  shift #skip $2
+  PARAMS="$*"
+else
+  PARAMS=""
+fi
+
+# Other general settings
+OUTDIR=.
+# Set linesize to a variable, default is 2000.
+if [ -z "$SQLPLUS_LINESIZE" ]
+then
+  SQLPLUS_LINESIZE=2000
+fi
+# Set recsep. Default value is on.
+if [ -z "$SQLPLUS_RECSEP" ]
+then
+  SQLPLUS_RECSEP=wrapped
+fi
+
+if [ "$ERROR" = "" ]; then
+  echo "\n`date` Running ${SCRIPT} in Oracle..."
+  # Allow sqlplus to export UTF-8 from Voyager
+  export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+
+  # Run the SQL script
+  sqlplus -S $CREDENTIALS<<EOF >${OUTPUT}
+set autoprint off;
+set echo off;
+set feedback off;
+set heading off;
+set linesize $SQLPLUS_LINESIZE;
+set pagesize 0;
+set tab off;
+set trim off;
+set verify off;
+set recsep $SQLPLUS_RECSEP;
+@${SCRIPT} ${PARAMS};
+EOF
+
+  echo "`date` Finished running ${SCRIPT}"
+
+else
+  echo "***** $SCHEMA $ERROR *****"
+fi
+echo "\n************************************************************"
+
+

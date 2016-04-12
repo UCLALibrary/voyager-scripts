@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Uses custom java program to build and send email circ notices
+# Last revised: 2009-04-13 drickard
+
+# Setup
+DIR=/m1/voyager/ucladb/rpt
+# changed to use actual latest java executable drickard 20100709
+#JAVA=/usr/jdk/latest/bin/java
+JAVA=/usr/local/bin/java
+JAVADIR=/opt/local/java
+PROGRAM=${JAVADIR}/circmail.jar
+PROPERTIES_FILE=${JAVADIR}/notices.properties
+VERBOSE=true
+
+# Process each email file
+# 2009-04-13 drickard: modifed file-name pattern in ls command, add command to rename processed files
+for FILE in `ls ${DIR}/crcnotes.*.inp_circ_*.email 2>/dev/null`; do
+  if [ -s ${FILE} ]; then
+    echo ${FILE}
+    ${JAVA} -jar ${PROGRAM} ${FILE} ${PROPERTIES_FILE}
+    mv ${FILE} ${FILE}.sent
+  fi
+done
+
+# 2009-04-15 drickard: clear out sent email files every quarter
+find ${DIR} -type f -name 'crcnotes.*.inp_circ_*.email.sent' -mtime +90 -exec rm {} \;
+

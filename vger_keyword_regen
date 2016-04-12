@@ -1,0 +1,42 @@
+#!/bin/ksh
+# ksh apparently needed since REGEN.keyword is ksh
+
+# For VGER_BASE
+. /opt/local/bin/vger_getenv
+
+DB=$1
+case ${DB} in
+  ethnodb|filmntvdb|ucladb ) ;;
+  * ) echo "Invalid database ${DB}: must be ethnodb, filmntvdb, or ucladb - exiting"
+      exit 1
+      ;;
+esac
+
+TYPE=$2
+case ${TYPE} in
+  bib  ) SCRIPT=REGEN.keyword.bib
+         ;;
+  mfhd ) SCRIPT=REGEN.keyword.mfhd
+         ;;
+  * ) echo "Invalid type ${TYPE}: must be bib or mfhd - exiting"
+      exit 1
+      ;;
+esac
+
+# Customized REGEN scripts - not ucladb-specific, but not really for /usr/local/bin either
+SCRIPTDIR=/m1/voyager/ucladb/local/regens
+TODAY=`date "+%Y%m%d"`             # date format is YYYYMMDD
+BASE=/m1/incoming
+DIR=${BASE}/${DB}_${TYPE}_${TODAY}
+
+mkdir -p ${DIR}
+cd ${DIR}
+if [ $? -eq 0 ]; then
+  ${SCRIPTDIR}/${SCRIPT} ${VGER_BASE}/${DB}/ini/voyager.env > ${TYPE}.regen.log 2>&1
+  # rm bib_text* dynamic.* omnisearch.* ucladb.*
+else
+  echo "Unable to switch to ${DIR} - exiting"
+  exit 1
+fi
+
+

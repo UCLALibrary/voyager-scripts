@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# Housekeeping, called by vger_daily_rotate_expire and Nagios
+# Rotate and expire Tomcat logs, which would otherwise be deleted when 
+#   svc:/site/ExLibris/Voyager/*db/Pwebvoyage:default calls
+#   /m1/voyager/*db/tomcat/tsvrctl start
+# Should be called by voyager or root
+# WARNING: the service should be down before we copy its logs
+#   vger_daily_rotate_expire (run by root) ensures that the service is down
+#   Nagios calls this script (as voyager) only when the service is down
+
+#====== Set vars ======#
+
+# Set VGER_BASE
+#   VGER_BASE=/m1/voyager
+. /opt/local/bin/vger_voyenv
+
+case "$1" in
+ethnodb|filmntvdb|ucladb)
+    DB="$1"
+    DIR="$VGER_BASE/$DB/tomcat"
+    ;;
+*)
+    echo "`basename $0`: Unknown database name '"$1"'"
+    exit 1
+    ;;
+esac
+
+#====== Rotate and expire ======#
+
+# For example
+# /m1/voyager/ucladb/tomcat/logs# ls -l
+# total 2609
+# -rw-r--r--   1 voyager  exlibris 1184315 Jul  8 10:19 access.2014-07-08.log
+# -rw-r--r--   1 voyager  exlibris   65806 Jul  8 10:07 catalina.2014-07-08.log
+# -rw-r--r--   1 voyager  exlibris   84481 Jul  8 10:07 catalina.out
+# -rw-r--r--   1 voyager  exlibris       0 Jul  8 05:38 localhost.2014-07-08.log
+cp -pR $DIR/logs $DIR/logs-`date "+%Y%m%d-%H%M%S"`
+
+# Delete old files from rotated log directories
+find $DIR/logs-????????-?????? -type f -mtime +93 2>/dev/null | xargs rm -f
+
+# Delete newly-empty directories
+# Ignore warning when rmdir is asked to delete a non-empty directory
+rmdir $DIR/logs-????????-?????? 2>/dev/null
+
+exit 0

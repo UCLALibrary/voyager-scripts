@@ -1,0 +1,20 @@
+#!/bin/ksh
+
+# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
+. /opt/local/bin/vger_getenv
+
+DIR=${VGER_BASE}/ucladb
+
+# Requires day count, provided via $1
+if [ -z "$1" ]; then
+  echo "Usage: $0 number-of-days"
+  exit 1
+else
+  DAYS=$1
+fi
+
+CIRCDIR=${DIR}/local/circ
+
+/opt/local/bin/vger_sqlplus_run ucladb ${CIRCDIR}/clear_circ_history ${DAYS}
+
+

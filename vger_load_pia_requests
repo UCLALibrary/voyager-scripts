@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# Voyager environment for cron
+BIN=/opt/local/bin
+. ${BIN}/vger_getenv
+
+SOURCE_DIR=/m1/voyager/ucladb/rpt
+TARGET_DIR=/m1/voyager/ucladb/local/pia/requests
+BASE_NAME=opacrequests.BUYFORME
+BASE_EXT=out
+TIME_STAMP=`date +%Y%m%d%H%M%S`
+
+echo ${TIME_STAMP} checking PIA requests # for logging
+
+# source file is generated from circjob 26
+SOURCE_FILE=${SOURCE_DIR}/${BASE_NAME}.${BASE_EXT}
+# target file has same name, but with a time stamp
+TARGET_FILE=${TARGET_DIR}/${BASE_NAME}.${TIME_STAMP}.${BASE_EXT}
+SQLLDR_CONTROL=/m1/voyager/ucladb/local/pia/pia_requests.ctl
+
+if [ -s ${SOURCE_FILE} ]; then
+  # (source file is generated from circjob 26; subsequent job will create new file)
+  mv ${SOURCE_FILE} ${TARGET_FILE}
+
+  # Strip out embedded CRLF caused when user hits ENTER in comment field,
+  # so requests can be parsed correctly for Oracle load.
+  # Tested with requests from Windows and Unix browsers.
+  # perl -i option updates file in place - no need for temporary working copy.
+  perl -p -i -e 's/\r\n/ /g' ${TARGET_FILE}
+
+  /opt/local/bin/vger_sqlldr_load vger_support ${TARGET_FILE} ${SQLLDR_CONTROL}
+  cat ${TARGET_FILE}.log | mailx -s "PIA REQUEST" lit-libweb@library.ucla.edu
+
+  # Create orders for new valid requests
+  ${BIN}/vger_load_pia_phase_2
+fi

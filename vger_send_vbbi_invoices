@@ -1,0 +1,35 @@
+#!/bin/sh
+# Extracts Voyager invoice data and sends it to AIS server
+
+BIN=/opt/local/bin
+DIR=/m1/voyager/ucladb/local/vbbi
+cd ${DIR}
+
+USER=bb_library
+PWD=`${BIN}/get_value.pl ${BIN}/ais_credentials ${USER}`
+DATE=`date "+%Y%m%d"` #YYYYMMDD
+PACNAME=LIBRY-APINTRFC
+LIBNAME=${PACNAME}.${DATE}
+OUTFILE=vbbi_invoices.out
+
+# Generate file of invoice data
+${BIN}/vger_sqlplus_run vger_support vbbi_invoices
+
+# Get stats and send to AIS, or delete empty file
+if [ -s ${OUTFILE} ]; then
+  mv ${OUTFILE} ${LIBNAME}
+  # Get some stats, basic error checking
+  echo Invoices: `grep "^Z25" ${LIBNAME} | wc -l`
+  echo Errors  : `egrep -v "^Z20|^Z21|^Z25|^Z41" ${LIBNAME} | wc -l`
+  (
+    echo "user ${USER} ${PWD}"
+    echo "put ${LIBNAME} ${PACNAME}"
+    echo "dir"
+    echo "quit"
+  ) | ftp -n -v fx.it.ucla.edu
+  mv ${LIBNAME} ${DIR}/archive/
+else
+  echo "${OUTFILE} is empty - no invoices"
+  rm ${OUTFILE}
+fi
+

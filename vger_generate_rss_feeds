@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# Create .xml files (RSS feeds) from catalog database (assume it is up)
+# Normally run from voyager crontab, shortly after daily OCLC load 
+# Could be run by hand or by member of exlibris group
+# Don't back up the .xml files: they can be recreated at will
+# Properties file describes which directories hold the .xml files
+
+# Ensure java programs have the right locale for utf-8 output
+LC_CTYPE=en_US.UTF-8
+export LC_CTYPE
+
+#JAVA=/usr/jdk/latest/bin/java	# path to 1.5 java on butler
+JAVA=/usr/local/bin/java
+
+# Supporting files are all here
+SUPPORTDIR=/m1/voyager/ucladb/local/rss
+# Jar files contain the programs
+DATAJARFILE=${SUPPORTDIR}/rss-data.jar
+JARFILE=${SUPPORTDIR}/rss-feeds.jar
+# Properties file describes which directories hold the .xml files
+PROPSFILE=${SUPPORTDIR}/rss.properties
+#output directory used below for archiving one feed
+OUTPUTDIR=/opt/local/www/rss/feeds
+#date in YYYYMMDD format for archiving all_law feed
+YESTERDATE=`${SUPPORTDIR}/get_yesterday`
+
+# Make sure supporting files are available
+for FILE in ${DATAJARFILE} ${JARFILE} ${PROPSFILE}; do
+  if [ ! -s ${FILE} -o ! -r ${FILE} ]; then
+    echo "${FILE} is missing, empty, or not readable - exiting"
+    exit 1
+  fi
+done
+
+# Make sure output dir exists
+if [ ! -d ${OUTPUTDIR} ]; then
+  mkdir -p ${OUTPUTDIR}
+fi
+
+if [ -s "${OUTPUTDIR}/all_law.xml" ]; then
+  mv ${OUTPUTDIR}/all_law.xml ${OUTPUTDIR}/all_law.${YESTERDATE}.xml
+fi
+
+# Jar files have manifests pointing to obsolete libraries
+# Temporary override until/unless manifests are rebuilt:
+#$JAVA -jar $DATAJARFILE $PROPSFILE
+#$JAVA -jar $JARFILE $PROPSFILE
+J=/opt/local/java
+CLASSPATH=$J/spring.jar:$J/oracle.jar:$J/commons.jar:$J/jdom.jar:$J/rome-0.8.jar
+
+$JAVA -cp $CLASSPATH:$DATAJARFILE edu.ucla.library.libservices.beans.FeedDataBuilder $PROPSFILE
+$JAVA -cp $CLASSPATH:$JARFILE edu.ucla.library.libservices.beans.FeedBuilder $PROPSFILE
+$JAVA -cp $CLASSPATH:$JARFILE edu.ucla.library.libservices.beans.LawFeedBuilder $PROPSFILE
+
+#clear out old archived files
+find ${OUTPUTDIR} -type f -name 'all_law.*.xml' -mtime +90 -exec rm {} \;
+
+echo "Exit status is $?"
+date
+

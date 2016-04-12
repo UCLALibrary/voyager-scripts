@@ -1,0 +1,92 @@
+#!/bin/sh
+
+# Set $YEAR, $MONTH and $DAY from $1, $2 and $3
+# Must be sourced into caller: . vger_ymd
+# Since sourced, caller must set $1 $2 $3, either via its own commandline params
+# or like this: set $YEAR $MONTH $DAY; . vger_ymd
+# If no command-line args, use today's date
+#   YEAR is a 4-digit year
+#   MONTH can be 01..12
+#   DAY can be 01..31
+# Then, from $YEAR and $MONTH, determine
+#   LAST_YYYYMM
+#   THIS_YYYYMM
+#   NEXT_YYYYMM
+
+YEAR=$1
+MONTH=$2
+DAY=$3
+if [ -z "$YEAR" ]
+then
+    YEAR=`date "+%Y"`
+fi
+if [ -z "$MONTH" ]
+then
+    MONTH=`date "+%m"`
+else
+    if [ $MONTH -le 9 ]
+    then
+	MONTH=0`expr $MONTH + 0`
+    fi
+fi
+if [ -z "$DAY" ]
+then
+    DAY=`date "+%d"`
+else
+    if [ $DAY -le 9 ]
+    then
+	DAY=0`expr $DAY + 0`
+    fi
+fi
+
+case "$MONTH" in
+    01 )
+	LAST_YYYYMM=`expr $YEAR - 1`"12"
+	NEXT_YYYYMM=$YEAR"02"
+	;;
+    02 )
+	LAST_YYYYMM=$YEAR"01"
+	NEXT_YYYYMM=$YEAR"03"
+	;;
+    03 )
+	LAST_YYYYMM=$YEAR"02"
+	NEXT_YYYYMM=$YEAR"04"
+	;;
+    04 )
+	LAST_YYYYMM=$YEAR"03"
+	NEXT_YYYYMM=$YEAR"05"
+	;;
+    05 )
+	LAST_YYYYMM=$YEAR"04"
+	NEXT_YYYYMM=$YEAR"06"
+	;;
+    06 )
+	LAST_YYYYMM=$YEAR"05"
+	NEXT_YYYYMM=$YEAR"07"
+	;;
+    07 )
+	LAST_YYYYMM=$YEAR"06"
+	NEXT_YYYYMM=$YEAR"08"
+	;;
+    08 )
+	LAST_YYYYMM=$YEAR"07"
+	NEXT_YYYYMM=$YEAR"09"
+	;;
+    09 )
+	LAST_YYYYMM=$YEAR"08"
+	NEXT_YYYYMM=$YEAR"10"
+	;;
+    10 )
+	LAST_YYYYMM=$YEAR"09"
+	NEXT_YYYYMM=$YEAR"11"
+	;;
+    11 )
+	LAST_YYYYMM=$YEAR"10"
+	NEXT_YYYYMM=$YEAR"12"
+	;;
+    12 )
+	LAST_YYYYMM=$YEAR"11"
+	NEXT_YYYYMM=`expr $YEAR + 1`"01"
+	;;
+esac
+THIS_YYYYMM=$YEAR$MONTH

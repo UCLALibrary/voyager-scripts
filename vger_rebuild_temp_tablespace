@@ -1,0 +1,29 @@
+#!/bin/sh
+# Must be run as oracle or other user in dba group
+
+# For ORACLE_HOME and other environment
+. /opt/local/bin/vger_oraenv
+
+# For running SQL commands
+SQLDBA="${ORACLE_HOME}/bin/sqlplus -S /nolog"
+
+# The single file we use for VGER's temp tablespace
+TEMPFILE=/oracle/oradata/VGER/system/temp01.dbf
+
+# Only rebuild TEMP tablespace if it's bigger than a certain size
+THRESHOLD=4000000  # Kilobytes: 4 million KB, a little less than 4 GB
+
+SIZE=`du -k ${TEMPFILE} | awk '{print $1}'`
+if [ ${SIZE} -gt ${THRESHOLD} ]; then
+  echo "TEMPDB is ${SIZE} KB, rebuilding..."
+# Start of SQL block 
+  ${SQLDBA} << EOD
+  connect / as sysdba;
+  alter database tempfile '${TEMPFILE}' drop including datafiles;
+  alter tablespace temp add tempfile '${TEMPFILE}'
+    size 2048M reuse autoextend on next 512M maxsize unlimited;
+EOD
+# End of SQL block
+  echo "Done rebuilding TEMPDB"
+fi
+

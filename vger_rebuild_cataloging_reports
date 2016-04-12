@@ -1,0 +1,14 @@
+#!/bin/sh
+# Rebuild tables used for cataloging Analyzer reports, which depend on the subfield db
+# Takes about 90 minutes to run
+
+# Include environment for cron
+BIN=/opt/local/bin
+. ${BIN}/vger_getenv
+
+SQL=/m1/voyager/ucladb/local/cat/reports/build_cat_report_tables
+${BIN}/vger_sqlplus_run vger_report ${SQL}
+
+#Include logged output in script output, for email
+cat ${SQL}.out
+

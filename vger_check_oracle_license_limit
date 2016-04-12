@@ -1,0 +1,21 @@
+#!/bin/sh
+# Checks Voyager's current Oracle alert log for license warning messages
+# which occur when the number of simultaneous sessions is at or near the limit.
+# If no warnings, output for current log should be null; output for earlier logs:
+# License high water mark = 915 (number will vary daily)
+#
+# This script must be run by the oracle user or a user in the dba group.
+# 20090205 akohler
+
+# All logs are in the same place, as defined in oracle user's current environment
+DIR=${ORA_LOG}
+
+# Default to current log but allow checking others via commandline
+if [ "$1" ]; then
+  FILE=$1
+else
+  FILE=alert_VGER.log
+fi
+
+grep License ${DIR}/${FILE} | sort -u
+

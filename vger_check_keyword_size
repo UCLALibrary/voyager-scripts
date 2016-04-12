@@ -1,0 +1,55 @@
+#!/bin/sh
+# Check ratio of dynamic to static keyword index files
+# If ratio is above a threshold, a regen is needed
+# Last revised: 20080718 akohler
+
+# For cron, VGER_BASE
+. /opt/local/bin/vger_getenv
+
+
+echo "\nChecking sizes of production keyword indexes:"
+# Check production databases
+for DB in ethnodb filmntvdb ucladb; do
+  # Bib keyword
+  DATADIR=${VGER_BASE}/${DB}/data
+  # Size of dynamic file (each db has only one)
+  DYNSIZE=`ls -l ${DATADIR}/dynamic.dc | awk '{print $5}'`
+  # Size of first static file (a db may have several)
+  STATSIZE=`ls -l ${DATADIR}/${DB}*.dc | head -1 | awk '{print $5}'`
+  RATIO=`expr 100 \* ${DYNSIZE} / ${STATSIZE}`
+  # Above threshold, performance starts to deteriorate
+  # Higher tolerance for ethnodb, since it's so small
+  if [ ${DB} = ethnodb ]; then
+    THRESHOLD=50
+  else
+    THRESHOLD=30
+  fi
+  if [ ${RATIO} -gt ${THRESHOLD} ]; then
+    MSG="Schedule a regen"
+  else
+   MSG="OK"
+  fi
+  echo ${DB} bib keyword dynamic/static ratio is ${RATIO}: ${MSG}
+
+  # Mfhd keyword
+  DATADIR=${VGER_BASE}/${DB}/mfhd.data
+  # Size of dynamic file (each db has only one)
+  DYNSIZE=`ls -l ${DATADIR}/dynamic.mfhd.dc | awk '{print $5}'`
+  # Size of first static file (a db may have several)
+  STATSIZE=`ls -l ${DATADIR}/${DB}*.dc | head -1 | awk '{print $5}'`
+  RATIO=`expr 100 \* ${DYNSIZE} / ${STATSIZE}`
+  # Higher tolerance for mfhd; ethno is so small, even higher ratio
+  if [ ${DB} = ethnodb ]; then
+    THRESHOLD=200
+  else
+    THRESHOLD=50
+  fi
+  if [ ${RATIO} -gt ${THRESHOLD} ]; then
+    MSG="Schedule a regen"
+  else
+   MSG="OK"
+  fi
+  echo ${DB} mfhd keyword dynamic/static ratio is ${RATIO}: ${MSG}
+  echo ""
+done # for DB
+

@@ -1,0 +1,54 @@
+#!/bin/sh
+
+# Set $YEAR, $MONTH and $DAY + $DELTA (number of days)
+# Caller must set $DELTA (assume within last month, this month and next month)
+# For example, yesterday
+#   DELTA=-1; . vger_ymd_delta
+# and tomorrow
+#   DELTA=1; . vger_ymd_delta
+# The command-line arguments will override current year, month and day
+#   $1 is a 4-digit year
+#   $2 is 1..12 or 01..12
+#   $3 is 1..31 or 01..31
+
+if [ -z "$DELTA" ]
+then
+    DELTA=0
+fi
+
+# Set $YEAR, $MONTH and $DAY from current date or $1, $2 and $3
+# Set $LAST_YYYYMM, $THIS_YYYYMM and $NEXT_YYYYMM from $YEAR and $MONTH
+. /opt/local/bin/vger_ymd
+#echo $YEAR $MONTH $DAY $DELTA
+
+DAY=`expr $DAY + $DELTA`
+#echo $DAY
+if [ $DAY -lt 1 ]
+then
+    # Last month
+    YEAR=`echo $LAST_YYYYMM | cut -c1-4`
+    MONTH=`echo $LAST_YYYYMM | cut -c5-6`
+
+    # Number of days last month
+    DAY_CNT=`expr \`cal $MONTH $YEAR | wc -w\` - 9`
+
+    DAY=`expr $DAY + $DAY_CNT`
+else
+    # Number of days this month
+    DAY_CNT=`expr \`cal $MONTH $YEAR | wc -w\` - 9`
+
+    # Maybe next month
+    if [ $DAY -gt $DAY_CNT ]
+    then
+	# Go to next month
+	YEAR=`echo $NEXT_YYYYMM | cut -c1-4`
+	MONTH=`echo $NEXT_YYYYMM | cut -c5-6`
+
+	DAY=`expr $DAY - $DAY_CNT`
+    fi
+fi
+if [ $DAY -le 9 ]
+then
+    DAY=0$DAY
+fi
+#echo $YEAR $MONTH $DAY

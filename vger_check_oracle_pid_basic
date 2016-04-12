@@ -1,0 +1,93 @@
+#!/bin/sh
+
+# Look for the Oracle processes started by /etc/rc2.d/S97dbora
+# If any are missing, work as root and follow these steps to restart Oracle
+# 1.  Stop Apache and Voyager
+#         # /etc/rc2.d/S99httpd stop
+#         # /etc/rc2.d/S98voyager stop
+# 2.  Stop and restart Oracle in one of many increasingly difficult ways
+# 2.1.  If sqlplus works, then restart Oracle
+#           # /etc/rc2.d/S97dbora stop
+#           # /etc/rc2.d/S97dbora start
+#       Go to step 3.
+# 2.2.  If sqlplus fails, then reboot eliot from your current session
+#           # reboot
+# 2.3.  While you wait 3-5 mins for it to return, connect to eliot's console
+#       either from any Solaris server but eliot, as any user
+#           > telnet eliot-lom
+#           [enter root password to get console prompt]
+#           [log onto console as root]
+#       or from the physical console in the server room.
+#       You'll see this prompt
+#           #
+#       Watch processess go down.
+#       If everything shuts down and comes up again, then go to step 4.
+# 2.4.  If Oracle won't shut down, enter Lights Out Manager (lom) from the console
+#           # #.
+#       You'll see a new prompt
+#           lom> 
+#       (You can return to the console with the "console" command)
+# 2.5   Force Solaris down in one of several increasingly brutal ways
+#           lom> break
+#       If that worked, then Solaris has been interrupted and you see a new prompt
+#           ok>
+#       Go to step 2.8.
+# 2.6   Another way to force Solaris down
+#           lom> reset
+#       If that worked, then Solaris is down and you see a new prompt
+#           ok>
+#       Go to step 2.8.
+# 2.7.  Final way to force Solaris down
+#           lom> poweroff
+#           lom> poweron
+#       You'll see a new prompt
+#           ok> 
+# 2.8.  Boot into single-user mode, fsck
+#           ok> boot -s
+#           [enter root password when prompted]
+#           # fsck -y /export/home
+#           # fsck -y /m1
+#           # fsck -y /opt/local
+#           # fsck -y /oracle
+#           # fsck -y /vger
+#	If any fsck makes repairs, repeat it until it makes no repairs.
+#       Finish booting into multi-user mode
+#           # CTRL-D
+#       Log out of console and go to step 4.
+# 3.  Start Voyager and Apache
+#         /etc/rc2.d/S98voyager start
+#         /etc/rc2.d/S99httpd start
+#     Go to step 4.
+# 4.  Restart OPAC (Apache on carroll)
+#     On carroll: /etc/rc2.d/S99httpd stop; /etc/rc2.d/S99httpd start
+
+# Show command
+echo "Look for the Oracle processes started by /etc/rc2.d/S97dbora"
+echo "ps -u oracle -o user,stime,pid,ppid,args | egrep 'PID|ora_' | \
+grep -v 'ora_j000_VGER' | sort +1"
+
+# Sort by start time and pid
+ps -u oracle -o user,stime,pid,ppid,args | egrep 'PID|ora_' | \
+    grep -v 'ora_j000_VGER' | sort +1
+
+# Show expected results
+echo
+echo "You should have seen something similar to this"
+echo "    USER    STIME   PID  PPID COMMAND"
+echo "  oracle 03:23:47 26377     1 ora_pmon_VGER"
+echo "  oracle 03:23:47 26379     1 ora_psp0_VGER"
+echo "  oracle 03:23:47 26381     1 ora_mman_VGER"
+echo "  oracle 03:23:47 26383     1 ora_dbw0_VGER"
+echo "  oracle 03:23:47 26385     1 ora_lgwr_VGER"
+echo "  oracle 03:23:47 26387     1 ora_ckpt_VGER"
+echo "  oracle 03:23:47 26389     1 ora_smon_VGER"
+echo "  oracle 03:23:47 26391     1 ora_reco_VGER"
+echo "  oracle 03:23:48 26393     1 ora_cjq0_VGER"
+echo "  oracle 03:23:48 26395     1 ora_mmon_VGER"
+echo "  oracle 03:23:48 26397     1 ora_mmnl_VGER"
+echo "  oracle 03:23:48 26399     1 ora_d000_VGER"
+echo "  oracle 03:23:48 26401     1 ora_s000_VGER"
+echo "  oracle 03:23:55 26407     1 ora_qmnc_VGER"
+echo "  oracle 03:24:05 26522     1 ora_q000_VGER"
+echo "  oracle 03:24:47 26694     1 ora_q001_VGER"
+echo "If not, consult the comments at the beginning of this script ($0)"

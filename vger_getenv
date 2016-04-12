@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Env vars for Oracle and Voyager, available for userids other then
+#   oracle
+#   voyager
+# Three files, three names
+#   vger_getenv		both Oracle and Voyager
+#   vger_oraenv		Oracle only
+#   vger_voyenv		Voyager only
+
+case `hostname` in
+    wells|collins )
+	. /opt/local/bin/vger_oraenv
+	;;
+esac
+. /opt/local/bin/vger_voyenv
+

@@ -1,0 +1,95 @@
+#!/bin/sh
+# Create CLUSP (UCLA shared print) OCLC LHRs
+
+# Get full voyager environment
+BIN=/opt/local/bin
+. ${BIN}/vger_getenv
+
+# Everything happens here
+LHR=/m1/voyager/ucladb/local/lhr/clusp
+cd ${LHR}
+
+# Variables
+BASE=${LHR}/clusp_lhr_serials
+SQLFILE=${BASE}.sql
+DATAFILE=${SQLFILE}.out
+MFHDFILE=${BASE}.mfhds
+
+# Use date if provided, else default to last Monday
+# LASTDATE = last date records were edited, in YYYYMMDD
+if [ -n "$1" ]; then
+  LASTDATE=$1
+  # Allow full extract of all records by using date prior to Voyager migration
+  if [ "$LASTDATE" = "ALL" ]; then
+    LASTDATE=20000101
+  fi
+else
+  # Calculate Monday of previous week (at least 7 days ago)
+  case `date "+%w"` in          # 0..6 for Sun..Sat
+    0 ) DELTA=-13;;
+    1 ) DELTA=-7;;
+    2 ) DELTA=-8;;
+    3 ) DELTA=-9;;
+    4 ) DELTA=-10;;
+    5 ) DELTA=-11;;
+    6 ) DELTA=-12;;
+  esac
+  # Set YEAR, MONTH, DAY based on DELTA
+  # Clear out the commandline parms, else they get sent to vger_ymd_delta
+  while [ ! -z "$1" ]; do
+    shift
+  done
+
+  . /opt/local/bin/vger_ymd_delta
+  LASTDATE=${YEAR}${MONTH}${DAY}
+fi
+
+echo "Extracting LHRs for records updated on/after ${LASTDATE}..."
+
+# Run query to get necessary data
+${BIN}/vger_sqlplus_run ucla_preaddb ${SQLFILE} ${LASTDATE}
+
+# Exit if no data from query
+if [ ! -s ${DATAFILE} ]; then
+  echo "ERROR: no data in ${DATAFILE} from query - exiting"
+  exit 1
+fi
+
+# Extract Voyager holdings records, using the list of ids
+/m1/voyager/ucladb/sbin/Pmarcexport \
+  -rH \
+  -mM \
+  -t${DATAFILE} \
+  -o${MFHDFILE}
+
+# Create OCLC LHRs from the extracted Voyager holdings records
+# Results are in clusp_lhrs.mrc, name set by make_clusp_lhrs.pl
+${LHR}/make_clusp_lhrs.pl ${DATAFILE} ${MFHDFILE}
+
+# Stats
+${BIN}/marcsplit -c clusp_lhrs.mrc
+
+# Combine LHR files into file named for OCLC and generate LABEL file(s)
+PROJECT=P014205
+YYMMDD=`date "+%y%m%d"`
+mv clusp_lhrs.mrc DATA.D${YYMMDD}
+${BIN}/vger_make_oclc_label_files ${PROJECT} CLUSP
+
+# FTP the files to OCLC
+USER=tclusp1
+PWD=`${BIN}/get_value.pl ${BIN}/oclc_credentials ${USER}`
+(
+  echo "user ${USER} ${PWD}"
+  echo "cd 'edx.ebsb.clusp.ftp'"
+  echo "bin"
+  echo "mput DATA*"
+  echo "mput LABEL*"
+  echo "dir"
+  echo "quit"
+) | ftp -i -n -v edx.oclc.org
+
+# Cleanup
+mv ${LHR}/DATA* ${LHR}/LABEL* ${LHR}/archive/
+rm ${DATAFILE} ${MFHDFILE}
+
+

@@ -1,0 +1,45 @@
+#!/bin/ksh
+
+# get oracle environment for sqlplus
+. /opt/local/bin/vger_oraenv
+
+# if at least 2 commandline params, assume $1 and $2 are start/end dates
+# otherwise, STARTDATE=yesterday, ENDDATE=today
+# dates must be in YYYYMMDD format
+if [ ! -z "$2" ]; then
+  STARTDATE=$1
+  ENDDATE=$2
+  # for use in output filename later
+  YEAR=`echo ${STARTDATE} | cut -c1-4`
+  MONTH=`echo ${STARTDATE} | cut -c5-6`
+  DAY=`echo ${STARTDATE} | cut -c7-8` # not used yet
+else
+  DELTA=-1	# yesterday
+  # Set YEAR, MONTH, DAY based on DELTA
+  # Clear out the commandline parms, else they get sent to vger_ymd_delta
+  while [ ! -z "$1" ]; do
+    shift
+  done
+  . /opt/local/bin/vger_ymd_delta
+  STARTDATE=${YEAR}${MONTH}${DAY}
+  ENDDATE=`date "+%Y%m%d`
+fi
+
+# use sql template to create specific sql for this run
+SQLTEMPLATE=/opt/local/bin/vger_circ_transaction_log.sql
+SQLFILE=/tmp/`basename $0`.$$.sql
+
+sed -e "s/STARTDATE/$STARTDATE/g" \
+    -e "s/ENDDATE/$ENDDATE/g" \
+  $SQLTEMPLATE > $SQLFILE
+
+BASE=/m1/voyager/ucladb
+OUTFILE=${BASE}/rpt/circ_transactions_${YEAR}${MONTH}
+
+# get USERPASS sql connection info from env file
+. ${BASE}/ini/voyager.env
+
+echo "Extracting circ stats for ${STARTDATE}-${ENDDATE} to ${OUTFILE}..."
+sqlplus -S ${USERPASS} @${SQLFILE} >> ${OUTFILE}
+
+rm -f ${SQLFILE}

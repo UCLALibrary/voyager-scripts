@@ -1,0 +1,286 @@
+#!/bin/sh
+
+# Housekeeping, called by vger_daily
+# Rotate and expire Apache, Cognos, Voyager and Oracle logs and reports
+# WARNING: the caller (vger_daily) sets
+#   vger_daily_all_down=1
+# to indicate that Apache, Voyager and Oracle are down
+
+#====== Set vars ======#
+
+# Private logadm config file avoids conflicts with default in root's crontab
+LOGADM_CONF=/usr/local/etc/vger_logadm.conf export LOGADM_CONF
+
+# Set VGER_BASE
+#   VGER_BASE=/m1/voyager
+. /opt/local/bin/vger_voyenv
+
+# The asterisk in
+#   ORACLE_HOME=/oracle/app/oracle/product/*/db_1 represents one directory and
+#   refers to a version number, which changes over time
+# Set ORACLE_BASE ORACLE_HOME
+#   ORACLE_BASE=/oracle/app/oracle
+#   ORACLE_HOME=/oracle/app/oracle/product/*/db_1
+. /opt/local/bin/vger_getenv
+
+
+#====== Apache logs ======#
+
+# WARNING: Apache must be down for this part
+if [ -n "$vger_daily_all_down" ]
+then
+    # Rotate and expire non-empty Apache 2.x logs, keep 93 days,
+    # compress after the 4th,
+    # no message if file doesn't exist (some file names have "_" and some have "."),
+    # use local time in rotated file names,
+    # extension on rotated files is .YYYYMMDD-HHMMSS
+    /usr/sbin/logadm -f $LOGADM_CONF -w apache -p never -s 1b -A 93d -z 4 \
+	-N						\
+	-l -t '$file.%Y%m%d-%H%M%S'			\
+	'/m1/shared/apache2/logs/{access,error,clients_access,clients_error}_log'	\
+	'/m1/shared/apache2/logs/{access,error,mod_jk}.log'	\
+	'/m1/shared/apache2/logs/*/{access,error}_log'	\
+	'/m1/shared/apache2/logs/*/{access,error}.log'
+    /usr/sbin/logadm -f $LOGADM_CONF -p now -N apache
+fi
+
+# Expire Tomcat/Apache files
+# For example
+# /m1/shared/apache2/logs/jk-runtime-status.17784
+# /m1/shared/apache2/logs/jk-runtime-status.17784.log
+# Reduce to 7 days?
+find /m1/shared/apache2/logs/ -type f -name "jk-runtime-status.*" \
+    -mtime +62 | xargs rm -f
+
+#====== Cognos logs ======#
+
+# Rotate and expire main Cognos logs
+# The asterisk after /m1/shared/cognos/ represents one directory, which is
+#   a version number that changes over time
+if [ -n "$vger_daily_all_down" ]
+then
+    # Rotate non-empty file, keep 31 days, no error msg if no file,
+    #   use local time in rotated file names,
+    #   extension on rotated files is .YYYYMMDD-HHMMSS
+    /usr/sbin/logadm -f $LOGADM_CONF -w cognos -p never -s 1b -A 31d -N \
+	-l -t '$file.%Y%m%d-%H%M%S'		\
+	/m1/shared/cognos/*/logs/cogserver.log	\
+	/m1/shared/cognos/*/logs/tomcat.log
+    /usr/sbin/logadm -f $LOGADM_CONF -p now cognos
+fi
+
+# Expire other Cognos logs
+# Cognos seems to give unique names to its other logs
+find /m1/shared/cognos/*/logs -type f -mtime +31 | xargs rm -f
+
+#====== Voyager logs and reports ======#
+
+# Each Voyager db seems to have its own directory for logs and reports
+#   $DIR/log
+#   $DIR/rpt
+# but many are actually soft links to somebody else's directory
+#   ethno_*db	-> ethnodb
+#   filmntv_*db	-> filmntvdb
+#   ucla_*db	-> ucladb
+# Avoid complaints like this from logadm
+#   Warning: command failed: /bin/mkdir -p /m1/voyager/ucla_vandb/log
+#   mkdir: "/m1/voyager/ucla_vandb/log": Exists but is not a directory
+#   Warning: command failed: /bin/mkdir -p /m1/voyager/ucla_vandb/rpt
+#   mkdir: "/m1/voyager/ucla_vandb/rpt": Exists but is not a directory
+# Except for $DIR/local/z3950 and $DIR/local/cdl, $DIR/local is cleaned by the
+#   file creators
+# Questions about $DIR/local are in wells:/export/home/gloriar/find.out
+# Preserve these things forever in $DIR/rpt
+#   files *.inp
+#   files delete*
+#   files replace*
+#   all files in $DIR/rpt/del_archive
+# Preserve these things for three months in $DIR/rpt
+#   files acq*		Lola
+#   files circ*		David R.
+#   files crc*		David R.
+#   files *pupd*	David R.
+#   files *patron*	David R.
+#   everything else
+for DB in ethnodb filmntvdb ucladb
+do
+    DIR=$VGER_BASE/$DB
+
+    # WARNING: Voyager must be down for this part
+    if [ -n "$vger_daily_all_down" ]
+    then
+	# Rotate and expire logs
+	# Rotate non-empty file, keep 93 days, no error msg if no file,
+	#   use local time in rotated file names,
+	#   extension on rotated files is .YYYYMMDD-HHMMSS
+	/usr/sbin/logadm -f $LOGADM_CONF -w $DB -p never -s 1b -A 93d -N \
+	    -l -t '$file.%Y%m%d-%H%M%S'			\
+	    $DIR/local/cdl/get_patron_info.log		\
+	    $DIR/local/z3950/z3950_check.log		\
+	    $DIR/log/log.*[a-z]				\
+	    $DIR/log/*.log
+	/usr/sbin/logadm -f $LOGADM_CONF -p now $DB
+
+	# Rotate and expire reports
+	# Rotate non-empty file, keep 31 days, no error msg if no file,
+	#   use local time in rotated file names,
+	#   extension on rotated files is .YYYYMMDD-HHMMSS
+	/usr/sbin/logadm -f $LOGADM_CONF -w $DB-rpt -p never -s 1b -A 31d -N \
+	    -l -t '$file.%Y%m%d-%H%M%S'			\
+	    $DIR/rpt/*job.log
+	/usr/sbin/logadm -f $LOGADM_CONF -p now $DB-rpt
+
+	# Rotate and expire Tomcat logs, which would otherwise be deleted when 
+	#   svc:/site/ExLibris/Voyager/$DB/Pwebvoyage:default calls
+	#   $DIR/tomcat/tsvrctl start
+	/usr/local/bin/vger_daily_rotate_expire_tomcat $DB
+    fi
+
+    # Expire more reports, misc files, extracts (Voyager could be up)
+
+    # Expire jobd.log.YYYY-MM-DD
+    find $DIR/log -type f \
+	-name "jobd.log.2[0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]" -mtime +93 | xargs rm -f
+
+    # 2006-10-04 akohler: added EDI maintenance
+    # 2007-05-08 Because EDI is optional, directory may not exist
+    # 2011-02-03 akohler: temporarily disabled - see Jira VBT-221
+    #if [ -d $DIR/edi/incoming/ ]
+    #then
+	#find $DIR/edi/incoming/ -type f -mtime +210 | xargs rm -f
+    #fi
+
+    # For example
+    #   acqnotes.eacq.20040708.1018
+    #   acqrprts.mgacq.20040708.1018
+    #   circ_transactions_200507
+    #   crcnotes.*.inp.ak_bak
+    #   crcnotes.cco.20040823.0804
+    #   crcnotes.yrloan.20040823
+    #   crcnotes.yrloan.20040823.0804
+    #   crcnotes.yrloan.inp.20040823
+    #   crcnotes.yrloan.inp_circ_20100706.email.sent
+    #   crcrprts.cco.20040823.0804
+    #   crcrprts.yrloan.20040823
+    #   crcrprts.yrloan.20040823.0804
+    #   email_20080401.log
+    #   err.pupd.20080330.0455
+    #   fpc_20110627135153.log
+    #   log.exp.20110523.0912
+    #   log.foreigncommitments.20040708.1140
+    #   log.pupd.20080330.0455
+    #   opaclog_200712.sif.gz
+    #   opacrequests.OE_LN.out.1091646002
+    #   opacrequests.OE_PH.out.1091646002
+    #   opsrchlgexport.log
+    #   opsrchlgexport.log.100
+    #   patron.purge.deleted.20100512103726
+    #   patron.purge.finesfees.20100512103726
+    #   patron.purge.historicalfines.20100512103726
+    #   patron.purge.holdrecall.20100512103726
+    #   patron.purge.itemscharged.20100512103726
+    #   patron.purge.log.20100512103726
+    #   transactions.txt.1144944001
+    # Preserve files $DIR/rpt/*.inp
+    # Preserve files $DIR/rpt/delete*
+    # Preserve files $DIR/rpt/replace*
+    # Preserve directory and its contents $DIR/rpt/del_archive/
+    find $DIR/rpt/ -type f \
+    ! -name "*.inp"	   \
+    ! -name "delete*"	   \
+    ! -name "replace*"	   \
+    \(	-name "*.inp.*bak"				-o \
+	-name "*notes.*acq.????????.????"		-o \
+	-name "*notes.*loan.????????"			-o \
+	-name "*notes.*loan.????????.????"		-o \
+	-name "*notes.*loan.inp.????????"		-o \
+	-name "*notes.*loan.inp*.email.sent"		-o \
+	-name "*notes.cco.????????.????"		-o \
+	-name "*rprts.*acq.????????.????"		-o \
+	-name "*rprts.*loan.????????"			-o \
+	-name "*rprts.*loan.????????.????"		-o \
+	-name "*rprts.cco.????????.????"		-o \
+	-name "circ_transactions_??????"		-o \
+	-name "email_????????.log"			-o \
+	-name "err.pupd*"				-o \
+	-name "fpc_??????????????.log"			-o \
+	-name "log.exp.????????.????"			-o \
+	-name "log.foreigncommitments.????????.????"	-o \
+	-name "log.pupd*"				-o \
+	-name "opaclog_*.gz"				-o \
+	-name "opacrequests.OE_*"			-o \
+	-name "opsrchlgexport.log*"			-o \
+	-name "patron.purge.*.??????????????"		-o \
+	-name "transactions.txt.*"				   \
+    \) -mtime +93 | grep -v "$DIR/rpt/del_archive/" | xargs rm -f
+
+    # For example
+    #   ./circjob.onreserve.20080317.040609
+    #   ./circjob.offreserve.20080322.034540
+    # Preserve $DIR/rpt/del_archive
+    find $DIR/rpt/ -type f \
+	-name "*job.*reserve.????????.??????" \
+	-mtime +31 | grep -v "$DIR/rpt/del_archive/" | xargs rm -f
+
+    # What's this?
+    find $DIR/dump/ -type f -mtime +31 | xargs rm -f
+done
+
+# Only ucladb has a directory for MELVYL extracts to CDL
+# Was it moved to /m1/voyager/ucladb/local/melvyl/out/sent?
+if [ -d /vger/melvyl/out/sent ]
+then
+    find /vger/melvyl/out/sent -type f -mtime +62 | xargs rm -f
+fi
+
+#====== Oracle ======#
+
+# WARNING: Oracle must be down for this part
+if [ -n "$vger_daily_all_down" ]
+then
+    hostname=`hostname`
+
+    # The asterisks are lower and upper case versions of VGER and MRDN. For example
+    #   $ORACLE_BASE/diag/rdbms/mrdn/MRDN/alert/log.xml
+    #   $ORACLE_BASE/diag/rdbms/vger/VGER/alert/log.xml
+    # Rotate non-empty file, keep 93 days, no error msg if no file,
+    #   extension on rotated files is .YYYYMMDD-HHMMSS
+    /usr/sbin/logadm -f $LOGADM_CONF -w oracle -p never -s 1b -A 93d -N \
+	-l -t '$file.%Y%m%d-%H%M%S'					\
+	$ORACLE_BASE/diag/rdbms/*/*/alert/log.xml			\
+	$ORACLE_BASE/diag/rdbms/*/*/trace/alert_*.log			\
+	$ORACLE_BASE/diag/tnslsnr/$hostname/listener/alert/log.xml	\
+	$ORACLE_BASE/diag/tnslsnr/$hostname/listener/trace/listener.log	\
+	$ORACLE_HOME/log/diag/tnslsnr/$hostname/listener/alert/log.xml	\
+	$ORACLE_HOME/log/diag/tnslsnr/$hostname/listener/trace/listener.log
+    /usr/sbin/logadm -f $LOGADM_CONF -p now oracle
+fi
+
+# Expire Oracle .aud, .trc, .trm and core files (Oracle could be up)
+find $ORACLE_BASE -type f \( -name "*.aud" -o -name "*.trc" -o -name "*.trm" \
+    -o -name core \) \
+    -mtime +93 | xargs rm -f
+
+#====== Misc ======#
+
+# Report all remaining cores in ufs- or zfs-mounted file systems
+RESULT="`find \`/usr/sbin/mount -p | grep ' [uz]fs ' | awk '{print $3}'\` \
+    -mount -type f -name core -ls -exec file {} \;`"
+if [ -n "$RESULT" ]
+then
+    CNT=`expr \`echo "$RESULT" | wc -l\` / 2`
+    echo "=== $CNT remaining cores and where they came from ==="
+    echo "$RESULT"
+fi
+
+# /m1/incoming: keep for 30 days
+# First remove the files, symlinks etc, ...
+# 2015-07-02 akohler: Don't expire /m1/incoming during upgrades
+###find /m1/incoming ! -type d -mtime +30 | xargs rm -f
+# ... then remove all empty folders, except /m1/incoming itself
+###find /m1/incoming -type d  | grep -v '^/m1/incoming$' | sort -r | \
+###    xargs rmdir -s 2>/dev/null
+
+# /tmp/log.exp.*: keep for 1 day
+# For example, /tmp/log.exp.20120202.1020
+find /tmp -type f -name "log.exp.????????.????" -mtime +1 | xargs rm -f

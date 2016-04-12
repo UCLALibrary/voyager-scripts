@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# /var/core holds cores, according to rules in coreadm
+# Have added /var/core to /usr/openv/netbackup/exclude_list
+
+# Delete all cores from z3950svr
+/usr/bin/rm -f /var/core/core.z3950svr.*
+
+# Delete cores more than three days old
+/usr/bin/find /var/core -type f -name "core*" -mtime +3 -exec /usr/bin/rm -f {} \;
+
+# Owner is root:root, permissions are 600
+# Modify ownership and permissions for Ex Libris
+/usr/bin/chown -f voyager:exlibris /var/core/core*
+/usr/bin/chmod -f g+rw      	/var/core/core*
+

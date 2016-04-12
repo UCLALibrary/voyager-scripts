@@ -1,0 +1,85 @@
+#!/bin/sh
+
+# Called by userid root in /opt/local/bin/vger_daily
+# Oracle and Voyager are down: it is safe to ufsdump/ufsrestore /oracle and /m1
+
+#set -x
+
+# Do nothing if $MOUNT_POINT is not a separately mounted filesystem
+MOUNT_POINT="/backup"		# Base mount point for backup dirs on this host
+if /usr/sbin/mount | grep "^$MOUNT_POINT " >/dev/null 2>&1
+then
+    :
+else
+    echo "$0: No backup, because $MOUNT_POINT is not a filesystem"
+    exit 1
+fi
+
+# Increase when we get more disks
+# Keep
+#   butler_m1_keep
+#   butler_oracle_keep
+MAX=1				# Keep max this many backup dirs
+
+# YYYYmmdd_HHMM where mm=01..12 dd=01..31 HH=00..23 MM=00..59
+TIMESTAMP=`date "+%Y%m%d_%H%M"`
+
+
+# ------------------------------------------------------
+# Step 1 of 2: delete oldest backup dir
+# ------------------------------------------------------
+_delete_old ()
+{
+    # Ignore
+    #   butler_m1_keep
+    #   butler_oracle_keep
+    BACKUPS=`ls $MOUNT_POINT | grep $FN | grep -v _keep`
+
+    # Be careful:
+    #   `echo ""    | wc -l` equals 1
+    #   `echo "a\n" | wc -l` equals 2
+    if [ -z "$BACKUPS" ]
+    then
+	CNT=0
+    else
+	CNT=`echo "$BACKUPS" | wc -l`
+    fi
+
+    while [ $CNT -ge $MAX ]
+    do
+	# Oldest is on top
+	BACKUP=`echo "$BACKUPS" | head -1`
+
+        rm -rf $MOUNT_POINT/$BACKUP &
+
+	CNT=`expr $CNT - 1`
+	BACKUPS=`echo "$BACKUPS" | tail -$CNT`
+    done
+}
+
+# -------------------------------------------
+# Step 2 of 2: create new backup dir
+# -------------------------------------------
+_create_new ()
+{
+    if [ ! -d $MOUNT_POINT/$FN_NEW ]
+    then
+	mkdir -m 777 -p $MOUNT_POINT/$FN_NEW
+    fi
+    /usr/sbin/ufsdump 0f - /$SUBDIR | \
+	(cd $MOUNT_POINT/$FN_NEW; /usr/sbin/ufsrestore rf -)
+    rm $MOUNT_POINT/$FN_NEW/restoresymtable
+}
+
+# Our convention is to name backup dirs for their host and mount point
+# Ordered from the biggest to the smallest
+#   butler:/oracle
+#   butler:/m1
+for SUBDIR in oracle m1
+do
+    FN="butler_$SUBDIR"		# EVA: Family Name
+    FN_NEW="${FN}_$TIMESTAMP"
+
+    _delete_old
+    _create_new
+done

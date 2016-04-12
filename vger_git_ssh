@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# Wrapper script for ssh so individual people (akohler, drickard1967)
+# can use person-specific SSH keys to connect to GitHub while working
+# as the shared voyager OS user.  GitHub does not allow the same key-pair
+# to be used by multiple GitHub users, so we can't just use the
+# general voyager id_rsa key-pair.
+
+# Requires VGER_GIT_USER to be set
+if [ -z "${VGER_GIT_USER}" ]; then
+  echo "VGER_GIT_USER must be set - exiting"
+  exit 1
+fi
+
+# Keyfile must exist and be readable
+KEYFILE=${HOME}/.ssh/id_rsa-github-${VGER_GIT_USER}
+if [ ! -r ${KEYFILE} ]; then
+  echo "${KEYFILE} is not readable - exiting"
+  exit 1
+fi
+
+# Finally, run ssh with specific keyfile and other params passed by git.
+ssh -i ${KEYFILE} "$@"

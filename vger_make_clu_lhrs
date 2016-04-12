@@ -1,0 +1,100 @@
+#!/bin/sh
+# Creates LHRs (Local Holdings Records) for OCLC, which support ILL
+#  and WorldCat Local; uploads file(s) to OCLC via FTP.
+# Intended to run weekly via cron, generating records added/edited
+#  since Monday of the previous week, but can use any date via command line.
+
+# Environment for running via cron: need both voyager and oracle
+. /opt/local/bin/vger_getenv
+
+BIN=/opt/local/bin
+BASE=/m1/voyager/ucladb
+DIR=${BASE}/local/lhr/clu
+BASEFILE=extract_lhr
+SCHEMA=vger_report
+PASSWORD=`${BIN}/get_value.pl ${BIN}/vger_db_credentials ${SCHEMA}`
+
+cd ${DIR}
+
+# Use date if provided, else default to last Monday
+# LASTDATE = last date records were edited, in YYYYMMDD
+if [ -n "$1" ]; then
+  LASTDATE=$1
+else
+  # Calculate Monday of previous week (at least 7 days ago)
+  case `date "+%w"` in          # 0..6 for Sun..Sat
+    0 ) DELTA=-13;;
+    1 ) DELTA=-7;;
+    2 ) DELTA=-8;;
+    3 ) DELTA=-9;;
+    4 ) DELTA=-10;;
+    5 ) DELTA=-11;;
+    6 ) DELTA=-12;;
+  esac
+  # Set YEAR, MONTH, DAY based on DELTA
+  # Clear out the commandline parms, else they get sent to vger_ymd_delta
+  while [ ! -z "$1" ]; do
+    shift
+  done
+
+  . /opt/local/bin/vger_ymd_delta
+  LASTDATE=${YEAR}${MONTH}${DAY}
+fi
+
+echo "Extracting LHRs for records updated on/after ${LASTDATE}..."
+
+# Create table with data for later queries
+${BIN}/vger_sqlplus_run ${SCHEMA} ${DIR}/create_lhr_table ${LASTDATE}
+
+for TYPE in bibs hols; do
+  BASETYPE=${BASEFILE}_${TYPE}
+  SQLFILE=${BASETYPE}.sql
+  DATAFILE=${SQLFILE}.out
+  MARCFILE=${BASETYPE}.mrc
+  case ${TYPE} in
+    bibs) MODE=B
+          SCRIPT=make_lhrs_internet.pl
+          ;;
+    hols) MODE=H 
+          SCRIPT=make_lhrs_physical.pl
+          ;;
+  esac
+ 
+  # Get Voyager ids and OCLC numbers from main query
+  ${BIN}/vger_sqlplus_run ${SCHEMA} ${DIR}/${SQLFILE}
+
+  # Extract Voyager records in UTF-8
+  # Pmarcexport ignores data after tab, so no need to pull just Voyager ids into own file first 
+  ${BASE}/sbin/Pmarcexport -o${DIR}/${MARCFILE} -r${MODE} -mM -t${DIR}/${DATAFILE} -q
+  
+  # Move Pmarcexport log files
+  mv ${BASE}/rpt/*.exp.* ${DIR}/
+
+  # Create LHRs, using info from extracted Voyager records
+  ${DIR}/${SCRIPT} ${DATAFILE} ${MARCFILE}
+done
+
+# Stats
+${BIN}/marcsplit -c lhrs_internet.mrc
+${BIN}/marcsplit -c lhrs_physical.mrc
+
+# Combine LHR files into file named for OCLC and generate LABEL file(s)
+PROJECT=P011764
+YYMMDD=`date "+%y%m%d"`
+cat lhrs_internet.mrc lhrs_physical.mrc > DATA.D${YYMMDD}
+${BIN}/vger_make_oclc_label_files ${PROJECT}
+
+# FTP the files to OCLC
+(
+  echo "cd 'edx.ebsb.clu.ftp'"
+  echo "bin"
+  echo "mput DATA*"
+  echo "mput LABEL*"
+  echo "dir"
+  echo "quit"
+) | ftp -i -v edx.oclc.org
+
+## Cleanup
+mv ${DIR}/DATA* ${DIR}/LABEL* ${DIR}/archive/
+rm ${DIR}/*.out ${DIR}/log.exp.* ${DIR}/*.mrc
+

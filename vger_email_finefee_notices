@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Uses custom java program to build and send email fee/fine notices
+# Last revised: 2006-06-06 akohler
+
+# Setup
+DIR=/m1/voyager/ucladb/rpt
+# changed to use actual latest java executable drickard 20100709
+#JAVA=/usr/jdk/latest/bin/java
+JAVA=/usr/local/bin/java
+JAVADIR=/opt/local/java
+CLASSPATH=${JAVADIR}/vobj.jar:${JAVADIR}/mail.jar:${JAVADIR}/activation.jar:${JAVADIR}/feefinesender.jar
+PROGRAM=edu.ucla.library.libservices.voyager.FeeFineSender
+PROPERTIES_FILE=${JAVADIR}/voyager.properties
+VERBOSE=true
+
+# Remove last time's archive files
+rm -f ${DIR}/*.email.sent
+
+# Process each email file
+# 2009-04-13 drickard: modified the file-name pattern to match in ls command
+for FILE in `ls ${DIR}/*.inp_feefine_*.email 2>/dev/null`; do
+  if [ -s ${FILE} ]; then
+    echo ${FILE}
+    ${JAVA} -cp ${CLASSPATH} ${PROGRAM} ${FILE} ${PROPERTIES_FILE} ${VERBOSE}
+    mv ${FILE} ${FILE}.sent
+  fi
+done
+

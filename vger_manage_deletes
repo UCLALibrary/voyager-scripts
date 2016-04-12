@@ -1,0 +1,88 @@
+#!/bin/sh
+# Manage deleted Voyager MARC records and items
+
+_show_usage() {
+  echo "$0 database type"
+  echo "  where database is one of: ethnodb filmntvdb ucladb ALL"
+  echo "  and type is one of: auth bib mfhd ALL"
+  exit 1
+}
+
+DBLIST=$1
+case ${DBLIST} in
+  ethnodb ) ;;
+  filmntvdb ) ;;
+  ucladb ) ;;
+  ALL ) DBLIST="ethnodb filmntvdb ucladb" ;;
+  * ) _show_usage ;;
+esac
+
+TYPELIST=$2
+case ${TYPELIST} in
+  auth ) ;;
+  bib  ) ;;
+  mfhd ) ;;
+  ALL  ) TYPELIST="auth bib mfhd" ;;
+  * ) _show_usage ;;
+esac
+
+# Get voyager environment
+BIN=/opt/local/bin
+. ${BIN}/vger_voyenv
+
+for DB in ${DBLIST}; do
+  for TYPE in ${TYPELIST}; do
+    RPT=${VGER_BASE}/${DB}/rpt
+    cd $RPT
+
+    # Voyager master files use .marc extension; I use .mrc
+    FILE=deleted.${TYPE}.marc
+    if [ -s ${FILE} ]; then
+      mv ${FILE} ${FILE}.bak
+      # Split master file into monthly files
+      ${BIN}/vger_split_marc_deletefile.pl ${FILE}.bak ${TYPE}
+
+      # Someone may have deleted record(s) during the split; if so, the newly-deleted
+      #  records are in ${FILE} (which was just re-created by voyager)
+      # Combine latest month's split file with new deletes in master ${FILE}
+      # Order isn't important, so just append latest month's to any existing
+      LATEST=`ls deleted.${TYPE}.*.mrc | tail -1`
+      cat ${LATEST} >> ${FILE}
+
+      # Remove ${LATEST}, since those records are now in master ${FILE}
+      rm ${LATEST}
+
+      # Move new monthly file(s) into archive directory
+      ARCHIVE=del_archive
+      if [ ! -d ${ARCHIVE} ]; then
+        mkdir ${ARCHIVE}
+      fi
+      for DELFILE in `ls deleted.${TYPE}.*.mrc 2>/dev/null`; do
+        if [ ! -f ${ARCHIVE}/${DELFILE} ]; then
+          mv ${DELFILE} ${ARCHIVE}
+        fi
+      done
+
+      # Other clean-up (20090706 akohler: disabled removal of .bak temporarily)
+      # rm ${FILE}.bak
+    fi # if -s ${FILE}
+  done # TYPE
+
+  # 20080610: manage deleted items
+  ${BIN}/vger_manage_deleted_items ${DB}
+
+done # DB
+
+# 20101213: load selected deleted ucla bib subfields into cataloging reporting table
+# Clear out the commandline parms, else they get sent to vger_ymd
+while [ ! -z "$1" ]; do
+  shift
+done
+
+# For LAST_YYYYMM
+. ${BIN}/vger_ymd
+UCLA_BIB_DELFILE=${VGER_BASE}/ucladb/rpt/del_archive/deleted.bib.${LAST_YYYYMM}.mrc
+if [ -f ${UCLA_BIB_DELFILE} ]; then
+  ${BIN}/vger_load_deleted_subfields ${UCLA_BIB_DELFILE}
+fi
+

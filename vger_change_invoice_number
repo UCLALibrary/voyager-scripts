@@ -1,0 +1,56 @@
+#!/bin/ksh
+# ksh because voyager.env (included below) is ksh
+
+BIN=/opt/local/bin
+
+# Get voyager environment
+. ${BIN}/vger_voyenv
+
+# Mandatory arguments
+if [ -z "$2" ]; then
+  echo Usage: $0 invoice_id \'new_invoice_number\'
+  echo "*** Be sure to put new invoice number in single quotes if it contains spaces or special characters"
+  echo ""
+  exit 1
+else
+  INVOICE_ID=$1
+  NEW_INV_NO="$2"
+fi
+
+#echo ${INVOICE_ID} : ${NEW_INV_NO}
+
+SQLFILE=/tmp/`basename $0`.$$.sql
+
+(
+cat << END_OF_SQL
+set linesize 120
+prompt Data before update:
+select invoice_id, invoice_number
+from ucladb.invoice
+where invoice_id = ${INVOICE_ID};
+
+update ucladb.invoice
+set invoice_number = '${NEW_INV_NO}'
+, normal_invoice_number = ucladb.norm2('${NEW_INV_NO}')
+where invoice_id = ${INVOICE_ID};
+
+prompt Data after update:
+select invoice_id, invoice_number, normal_invoice_number
+from ucladb.invoice
+where invoice_id = ${INVOICE_ID};
+
+commit;
+/
+END_OF_SQL
+) > ${SQLFILE}
+
+#cat ${SQLFILE}
+
+# Execute the SQL
+${BIN}/vger_sqlplus_run ucladb ${SQLFILE}
+
+# View results, with before & after info
+cat ${SQLFILE}.out
+
+# Clean up
+rm -f ${SQLFILE} ${SQLFILE}.out

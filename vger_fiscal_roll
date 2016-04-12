@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# This should only be run by voyager
+# Hardcoded for ucladb
+
+# Get voyager environment
+. /usr/local/bin/vger_voyenv
+
+SBIN=/m1/voyager/ucladb/sbin
+
+echo `date`
+echo "Killing open acq sessions..."
+# Turn off acqsvr
+chmod 400 ${SBIN}/Pacqsvr
+# Kill sessions
+PS=`ps -e -o pid,args | grep acqsvr | grep ucladb | cut -c1-5`
+for PID in ${PS}; do
+  kill ${PID}
+done
+
+# Back up acq data
+echo `date`
+echo "Backing up acq data..."
+# file automatically goes into /m1/voyager/ucladb/dump
+${SBIN}/Pfpc_save
+
+# Roll the funds, without optional reports
+echo `date`
+${SBIN}/Pfpc_run
+
+# Allow acq sessions
+echo `date`
+echo "Restoring access to acq..."
+chmod 750 ${SBIN}/Pacqsvr
+# If any clients tried connecting while down, acqsvr is in maintenance mode - clear it
+/usr/sbin/svcadm clear ucladb/Pacqsvr
+
+echo "Done!"
+

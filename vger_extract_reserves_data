@@ -1,0 +1,26 @@
+#!/bin/sh
+# Extracts current course reserves data into tab-delimited file
+# Puts file on public ftp site for consumption by other campus departments course management systems
+#
+# Last revised: 2007-04-06 akohler
+
+# Get Oracle & Voyager environment
+. /usr/local/bin/vger_getenv
+
+BASE=/m1/voyager/ucladb/local/reserves/vger_extract_reserves_data
+FILE=voyager_reserves_data.txt
+
+# Extract current course reserves data by running ${BASE}.sql to create ${BASE}.out
+/opt/local/bin/vger_sqlplus_run ucla_preaddb ${BASE}
+
+# Make file available via ftp, with new name
+(
+  echo "cd /incoming/eres"
+  echo "ascii"
+  echo "put ${BASE}.out ${FILE}"
+  echo "quit"
+) | ftp -i -v ftp.library.ucla.edu
+
+# Clean up
+rm -f ${BASE}.out
+

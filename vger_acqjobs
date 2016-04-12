@@ -1,0 +1,65 @@
+#!/bin/sh
+
+# Voyager acq jobs, run by userid voyager from /opt/local/bin/vger_daily
+# Could also be run by userid law
+
+BIN=/opt/local/bin
+# VGER_BASE
+. ${BIN}/vger_voyenv
+
+# Each Voyager training and production db has its own scripts directory
+# Script names begin with T for training and P for production
+# Voyager and Oracle must be up
+case `hostname` in
+eliot|wells )
+    SERVER=prod			# production server
+
+    # Run jobs for ucladb, but not for any other database
+    # /opt/local/bin/vger_daily will take care of rotating logs
+    DIR=$VGER_BASE/ucladb
+    ;;
+butler|collins )
+    SERVER=test			# test server
+
+    echo "$0: this script can run only on the production server"
+    exit 1
+    ;;
+* )
+    echo "$0: this script can run only on a Voyager server"
+    exit 1
+    ;;
+esac
+
+# Pacqjob wants to do something in ../rpt
+cd $DIR/sbin
+
+# Daily
+# 31 Aug 2006 Need fully-qualified email address unless in /etc/aliases
+./Pacqjob -j1 | mailx -s "Acq claims run" lit-libweb@library.ucla.edu
+
+# Job 5 every Wednesday
+# 2005-02-09 akohler: Changed from Tues to Wed after talking with Sarika
+# 2006-08-31 akohler: Need fully-qualified email address unless in /etc/aliases
+case `date "+%w"` in		# date format is 0..6 for Sun..Sat
+3 )
+    ./Pacqjob -j5 | mailx -s "Currency updated" \
+	lit-libweb@library.ucla.edu asallen@library.ucla.edu
+    ;;
+esac
+
+# Retrieve EDI files from various vendors
+# Uses wget, which sends output to stderr
+# 2006-08-31 gloriar: Need fully-qualified email address unless in /etc/aliases
+echo "Retrieving EDI invoice files..."
+${BIN}/vger_get_edi_files 2>&1 | mailx -s "EDI files retrieved" \
+	agreenwa@library.ucla.edu lit-libweb@library.ucla.edu
+
+# Send EDI files to various vendors
+${BIN}/vger_send_edi_orders 2>&1 | mailx -s "EDI files sent" \
+  lit-libweb@library.ucla.edu
+
+# Retrieve EOD (order) files from various vendors
+${BIN}/vger_load_gobi
+${BIN}/vger_load_harrassowitz
+${BIN}/vger_load_casalini
+

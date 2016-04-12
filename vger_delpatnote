@@ -1,0 +1,86 @@
+#!/bin/sh
+############################################################
+# This script runs Java the commandline method DelPatNote.
+#
+# Last revised: 2008-01-15 chunt
+############################################################
+
+_show_usage() {
+  echo "\nUSAGE:"
+  echo "$0 input_file error_file"
+  echo "  where input_file is a list of values on which to run DelPatNote"
+  echo "  and error_file is the error file which lists return codes for rows which caused errors."
+  echo "  The input_file contains rows of noteId."
+  exit 1
+}
+
+
+########################################
+# Main routine starts here
+
+# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
+BIN=/usr/local/bin
+. ${BIN}/vger_getenv
+
+# Handle input parameters
+# input_file is required.
+if [ -n "$1" ]; then
+  INPUT_FILE=$1
+else
+  _show_usage
+  exit
+fi
+
+# error_file is required.
+if [ -n "$2" ]; then
+  ERROR_FILE=$2
+else
+  _show_usage
+  exit
+fi
+
+# if there are more parameters, show usage and exit
+if [ -n "$3" ]; then
+  _show_usage
+  exit
+fi
+
+if [ ! -r ${INPUT_FILE} ]; then
+  echo Input file ${INPUT_FILE} must exist and be readable.
+  exit
+fi
+
+# Delete error file from previous run if it exists.
+# This is data that causes non-zero return codes.
+if [ -f ${ERROR_FILE} ]; then
+  echo "\n***** Removing old error file ${ERROR_FILE} *****"
+  rm ${ERROR_FILE}
+fi
+
+SERVER=`hostname`.library.ucla.edu
+# changed to use actual latest java executable drickard 20100709
+#JAVA=/usr/jdk/latest/bin/java
+JAVA=/usr/local/bin/java
+JCH=/opt/local/java
+CLASSPATH=$JCH/vapi-core.jar:$JCH/vapi-client.jar:$JCH/commons-cli-1.0.jar:$JCH/delpatnote.jar
+PROPERTIES_FILE=$JCH/voyager.properties
+
+if [ ! -r ${PROPERTIES_FILE} ]; then
+  echo Properties file ${PROPERTIES_FILE} must exist and be readable.
+  exit
+fi
+
+$JAVA -classpath $CLASSPATH edu.ucla.library.libservices.voyager.DelPatNote -e $ERROR_FILE -i $INPUT_FILE -p $PROPERTIES_FILE
+
+retcode=`echo $?`
+case "$retcode" in
+  0) echo "DelPatNote execution successful." ;;
+  1) echo "***** DelPatNote execution exited with error. *****" ;;
+  *) echo "***** DelPatNote: unknown return code. *****";;
+esac
+
+# Draw attention to error file, if present
+if [ -f ${ERROR_FILE} ]; then
+  echo "\n***** Look at error file ${ERROR_FILE} *****"
+fi
+

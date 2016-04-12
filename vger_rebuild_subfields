@@ -1,0 +1,188 @@
+#!/bin/ksh
+#################
+# This script builds special tables of MARC data
+# preparsed into subfields for reporting.
+# These can take many hours to build from scratch.
+# Only Andy Kohler can run this script.  Change at your own peril!
+#
+# ksh needed for functions
+#################
+
+_show_usage() {
+  echo "\nUSAGE:"
+  echo "$0 database type [start_id] [end_id]"
+  echo "  where database is one of: ethnodb filmntvdb ucladb"
+  echo "  and type is one of: auth bib mfhd"
+  echo "start_id and end_id are optional; if end_id is provided,"
+  echo "  start_id must also be provided."
+  echo "start_id cannot be greater than end_id, or the max record id."
+  exit 1
+}
+
+# Function to get max id of a type for a database
+_get_max_id() {
+  SQLFILE=max${TYPE}.sql
+  echo "select 'MAXID=', max(${TYPE}_id) from ${DB}.${TYPE}_master;" > ${SQLFILE}
+  MAXID=`sqlplus ${SCHEMA}/${PWD} < ${SQLFILE} | grep "MAXID=" | awk '{print $2}'`
+  rm ${SQLFILE}
+}
+
+# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
+. /opt/local/bin/vger_getenv
+
+DB=$1
+case ${DB} in
+  ethnodb ) ;;
+  filmntvdb ) ;;
+  ucladb ) ;;
+  * ) _show_usage ;;
+esac
+
+TYPE=$2
+case ${TYPE} in
+  auth ) VGERTYPE=A;;
+  bib  ) VGERTYPE=B;;
+  mfhd ) VGERTYPE=H;;
+  * ) _show_usage ;;
+esac
+
+SCHEMA=vger_subfields
+PWD=`${BIN}/get_value.pl ${BIN}/vger_db_credentials ${SCHEMA}`
+REBUILDTABLE=Y
+TABLE=${DB}_${TYPE}_subfield
+BASE=/m1/voyager/${DB}
+OUTDIR=/tmp
+
+INTERVAL=100000
+# Set MAXID (largest id in table) with get_max_id function
+_get_max_id
+
+if [ -n "$3" ]; then
+  START=$3
+else
+  START=1
+fi
+
+if [ -n "$4" ]; then
+  END=$4
+else
+  END=`expr ${START} + ${INTERVAL} - 1`
+fi
+
+if [ ${START} -gt ${END} -o ${START} -gt ${MAXID} ]; then
+  _show_usage
+fi
+
+# If requested, drop and recreate (empty) table before loading starts
+if [ "${REBUILDTABLE}" = "Y" ]; then
+  echo "Recreating ${TABLE}..."
+  SQLFILE=${OUTDIR}/create_${TABLE}.sql
+  ( 
+    echo "DROP TABLE ${TABLE};"
+    echo "CREATE TABLE ${TABLE}"
+    echo "( record_id INT NOT NULL"
+    echo ", field_seq INT NOT NULL"
+    echo ", subfield_seq INT NOT NULL"
+    echo ", indicators CHAR(2) NULL"
+    echo ", tag CHAR(4) NOT NULL"
+    echo "--, subfield NCLOB NULL"
+    echo ", subfield NVARCHAR2(4000) NULL"
+    echo ");"
+    echo "GRANT SELECT ON ${TABLE} TO ucladb, ucla_preaddb, vger_support, vger_report WITH GRANT OPTION;"
+    echo "QUIT;"
+  ) > ${SQLFILE}
+  sqlplus -S ${SCHEMA}/${PWD} @${SQLFILE}
+  rm ${SQLFILE}
+fi
+
+CTLFILE=${TABLE}.ctl
+# Create control file for loading into oracle
+(
+  echo "LOAD DATA"
+  echo "CHARACTERSET UTF8"
+  echo "APPEND"
+  echo "INTO TABLE ${TABLE}"
+  echo "--SORTED INDEXES (ix_${DB}_${TYPE}_sf_tag_id)"
+  echo "FIELDS TERMINATED BY x'09'"
+  echo "TRAILING NULLCOLS"
+  echo "( record_id"
+  echo ", field_seq"
+  echo ", subfield_seq"
+  echo ", indicators"
+  echo ", tag"
+  echo ", subfield CHAR(9999)"
+  echo ")"
+) > ${CTLFILE}
+
+# Main loop: extract records, parse & sort subfields, load into Oracle
+while [ ${START} -le ${MAXID} ]; do
+
+  # Save time extracting records: don't look for records beyond MAXID
+  if [ ${END} -gt ${MAXID} ]; then
+    END=${MAXID}
+  fi
+
+  MARCFILE=${OUTDIR}/${DB}_${TYPE}_${START}_${END}.mrc
+  SUBFIELDFILE=${OUTDIR}/`basename ${MARCFILE} .mrc`.txt
+
+  rm -f ${MARCFILE} ${SUBFIELDFILE}
+
+  echo "`date` Extracting records from Voyager..."
+  ${BASE}/sbin/Pmarcexport -o${MARCFILE} -r${VGERTYPE} -mR -t${START}-${END} -q
+
+  # remove Pmarcexport log
+  LOG=`ls -1rt ${BASE}/rpt/log.exp.* | tail -1`
+  rm ${LOG}
+
+  # Parse marc file into subfields
+  echo "\n`date` Parsing marc records..."
+  # /usr/local/bin/build_marc_subfield_file ${MARCFILE} ${SUBFIELDFILE}.unsorted
+  /usr/local/bin/build_marc_subfield_file ${MARCFILE} ${SUBFIELDFILE}
+
+  # not building oracle indexes first, so no point in pre-sorting
+  # echo "\n`date` Sorting subfield file..."
+  # sort -t '	' -k 5,5 -k 1,1n ${SUBFIELDFILE}.unsorted > ${SUBFIELDFILE}
+
+  # Load data into Oracle database, in vger_subfields schema & tablespace
+  echo "\n`date` Loading parsed subfields into Oracle..."
+  sqlldr userid=${SCHEMA}/${PWD} control=${CTLFILE} direct=TRUE \
+    data=${SUBFIELDFILE} \
+    bad=${SUBFIELDFILE}.bad \
+    log=${SUBFIELDFILE}.log
+
+  # Include log info in output of this script
+  cat ${SUBFIELDFILE}.log
+
+  # Draw attention to "bad" file (data rejected by sqlldr), if present
+  if [ -f ${SUBFIELDFILE}.bad ]; then
+    echo "\n***** Look at ${SUBFIELDFILE}.bad *****\n"
+  fi
+
+  # Clean up
+  rm ${MARCFILE}
+  rm ${SUBFIELDFILE}
+  rm ${SUBFIELDFILE}.log
+  # rm ${SUBFIELDFILE}.unsorted
+
+  # Prepare for next loop iteration
+  START=`expr ${START} + ${INTERVAL}`
+  END=`expr ${END} + ${INTERVAL}`
+done
+
+# Create indexes for loaded data
+date
+SQLFILE=${TABLE}.$$.sql
+(
+  echo "PROMPT Creating index: ${SCHEMA}.ix_${DB}_${TYPE}_sf_tag_id"
+  echo "CREATE INDEX ${SCHEMA}.ix_${DB}_${TYPE}_sf_tag_id ON ${SCHEMA}.${TABLE} (tag, record_id);"
+  echo "PROMPT Creating index: ${SCHEMA}.ix_${DB}_${TYPE}_sf_id"
+  echo "CREATE INDEX ${SCHEMA}.ix_${DB}_${TYPE}_sf_id ON ${SCHEMA}.${TABLE} (record_id);"
+  echo "QUIT;"
+) > ${SQLFILE}
+
+sqlplus -S ${SCHEMA}/${PWD} @${SQLFILE}
+rm ${SQLFILE}
+
+rm ${CTLFILE}
+
+date

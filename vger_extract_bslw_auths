@@ -1,0 +1,89 @@
+#!/bin/ksh
+
+# Extracts MARC authority records from ucladb for BSLW processing
+# Last revised: 20080908 akohler
+
+# For cron
+BIN=/usr/local/bin
+. ${BIN}/vger_getenv
+
+DB=ucladb
+
+# Use dates if provided, else default to 15th of last month thru 14th of this month
+# Dates must be in YYYYMMDD format, and are inclusive
+if [  -n "$2" ]; then
+  STARTDATE=$1
+  ENDDATE=$2
+else
+  # Some inconsistencies with vger_ymd if YEAR/MONTH/DATE already in environment; even unset doesn't help
+  # so be sure these are correctly set for today
+  YEAR=`date "+%Y"`
+  MONTH=`date "+%m"` 
+  DAY=`date "+%d"` 
+  . ${BIN}/vger_ymd  # for LAST_YYYYMM and THIS_YYYYMM
+  STARTDATE=${LAST_YYYYMM}15
+  ENDDATE=${THIS_YYYYMM}14
+fi
+
+BASEDIR=/m1/voyager/ucladb/local/bslw/auth_extract
+BASE=bslw_auth
+SCHEMA=ucla_preaddb
+
+# Changed and New records: extract from Voyager
+TYPES="CHG NEW"
+for TYPE in ${TYPES}; do
+  SQL=${BASEDIR}/${BASE}_${TYPE}
+  RECORDLIST=${BASEDIR}/${BASE}_${TYPE}.out
+  RECORDS=${BASEDIR}/${TYPE}.mrc
+
+  # Get list of record ids
+  ${BIN}/vger_sqlplus_run ${SCHEMA} ${SQL} ${STARTDATE} ${ENDDATE}
+
+  # Pmarcexport appends to existing files, so delete existing
+  rm -f ${RECORDS}
+
+  # 2008418 akohler: now using default UTF-8, not MARC-8
+  # Export marc records in UTF-8 encoding, using the list of record ids
+  ${VGER_BASE}/${DB}/sbin/Pmarcexport \
+    -o${RECORDS} \
+    -rA \
+    -mM \
+    -t${RECORDLIST}
+
+  # Tidy up when done
+  rm -f ${RECORDLIST}
+done
+
+# Deleted records: not in Voyager, copy from files
+# Could be more precise but not worth it at present
+# For now, concatenate current month's delete file with previous month's
+RPT=/m1/voyager/${DB}/rpt
+PREVFILE=`ls ${RPT}/del_archive/deleted.auth* | tail -1`
+cat ${PREVFILE} ${RPT}/deleted.auth.marc > ${BASEDIR}/DEL.mrc
+
+# Transfer files to BSLW for processing and create log of stats
+FTPSITE=209.90.107.217
+EMAILLOG=${BASEDIR}/email.log
+echo "Monthly authority updates for tclu1 have been uploaded to ftp://${FTPSITE} :" > ${EMAILLOG}
+
+TYPES="CHG DEL NEW"
+for TYPE in ${TYPES}; do
+  FILE=${BASEDIR}/${TYPE}.mrc
+  if [ -s ${FILE} ]; then
+    REMOTEFILE=${TYPE}.MRC
+    (
+      echo "bin"
+      echo "put ${FILE} ${REMOTEFILE}"
+      echo "bye"
+    ) | ftp -i -v ${FTPSITE}
+
+    # Capture stats about file
+    COUNT=`${BIN}/marcsplit -c ${FILE} | tr -d '\n' |  awk '{print $3}'`
+    BYTES=`wc -c < ${FILE}`
+    echo "${REMOTEFILE}: ${COUNT} records, ${BYTES} bytes" >> ${EMAILLOG}
+  fi
+done
+
+# Send stats to akohler for later use
+cat ${EMAILLOG} | mailx -s "UCLA authority updates uploaded, thru ${ENDDATE}" lit-libweb@library.ucla.edu
+rm -f ${EMAILLOG}

@@ -1,0 +1,27 @@
+#!/bin/sh
+
+BIN=/opt/local/bin
+. ${BIN}/vger_getenv
+
+LOG=/m1/shared/apache2/logs/ucladb_vwebv/access_log
+
+MODDIR=/m1/shared/perl/5.18.1_Oracle11/lib/site_perl/5.18.1
+PREV_MINUTE=`perl -I${MODDIR} -e 'use Date::Manip; print UnixDate(ParseDateString("epoch " . (time() - 60)), "%d/%b/%Y:%H:%M");'`
+# PREV_MINUTE=07/Aug/2014:21:04 #testing
+PATTERN='(holdingsInfo|staffView)\?bibId='
+THRESHOLD=20
+SURGE_LOG=${HOME}/opac_surge.log
+
+# Get all entries from previous minute containing pattern, first field is
+#   hostname, sort hostnames, count hits, sort by hits, check against threshold
+# Send warning if hits over threshold
+egrep ${PREV_MINUTE} ${LOG} | egrep "${PATTERN}" | egrep -v " (403|500) " | cut -f1 -d" " | sort | \
+  uniq -c | sort -n | while read HITS HOST; do
+    if [ ${HITS} -gt ${THRESHOLD} ]; then
+      MESSAGE="Warning: ${HITS} hits from ${HOST} during ${PREV_MINUTE}"
+      # Write to a permanent log
+      echo ${MESSAGE} >> ${SURGE_LOG}
+      # Also send via email
+      echo ${MESSAGE} | mailx -s "OPAC Warning" akohler@library.ucla.edu
+    fi 
+done

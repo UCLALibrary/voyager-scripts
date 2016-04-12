@@ -1,0 +1,186 @@
+#!/bin/sh
+
+# Voyager circ jobs, run by userid voyager from /opt/local/bin/vger_daily
+
+# VGER_BASE
+. /opt/local/bin/vger_voyenv
+
+# Each Voyager training and production db has its own scripts directory
+# Script names begin with T for training and P for production
+# Voyager and Oracle must be up
+case `hostname` in
+eliot|wells )
+    SERVER=prod			# production server
+
+    # Run jobs for ucladb, but not for any other database
+    # 12 Jul 2004 add ethnodb filmntvdb ucladb
+    # 13 Jul 2004 disable ethnodb and filmntvdb
+    # /opt/local/bin/vger_daily will take care of rotating logs
+    DIR=$VGER_BASE/ucladb
+    ;;
+butler|collins )
+    SERVER=test			# test server
+
+    echo "$0: this script can run only on the production server"
+    exit 1
+    ;;
+* )
+    echo "$0: this script can run only on a Voyager server"
+    exit 1
+    ;;
+esac
+
+# Variable to identify winter closure period, based on logic in vger_bar; drickard 20091123
+NON_CLOSURE=`${DIR}/local/circ/bin/non_closure`
+
+# path used to locate Perl function called below drickard 20130220
+BIN=/opt/local/bin
+
+# Daily forever
+# Capture reserve status of items from the previous day to the 
+# UCLADB_RESERVE_TRANS table in the vger_report schema.
+/opt/local/bin/vger_sqlplus_run vger_support /m1/voyager/ucladb/local/patron/insert_reserve_trans
+
+# Capture circ stats
+/opt/local/bin/vger_circ_transaction_log
+
+# Run Circjob 1 (Update Shelving Status) and 
+# Circjob 2 (Overdue Notices). The latter creates 
+# lost item replacement and lost item processing 
+# fees and we need to do this before forgiving 
+# fines on returned items and sending fines to BAR.
+for JOB in 1 2
+do
+    ${DIR}/sbin/Pcircjob -j$JOB
+done
+
+# Forgive fines on returned items.
+/m1/voyager/ucladb/local/circ/bin/daily-forgive_fines_on_returned_items
+
+# Run the process that sends student fines to BAR
+# and updates in Voyager which of those fines have
+# been paid or credited.
+/opt/local/bin/vger_bar
+
+# Run various other Voyager circ jobs
+for JOB in 3 4 5 6 7 8 24
+do
+    ${DIR}/sbin/Pcircjob -j$JOB
+done
+
+# Date info, used by jobs below
+TODAY=`date "+%Y%m%d"`		# date format is YYYYMMDD
+DOW=`date "+%w"`		# 0..6 for Sun..Sat
+DOM=`date "+%d"`		# 01..31
+YESTERDAY=`${BIN}/get_yesterday.pl` # today - 1 in YYYYMMDD
+
+# Expired holds job: Run daily per Val request drickard 20130220
+${DIR}/sbin/Pcircjob -j19 -s${YESTERDAY} -e${TODAY}
+
+# Quarter-specific dates, as requested by CSC
+# Fall 2008+: per CV, only turn on lists automatically the first two weeks of the quarter
+# Job 34 (turn on reserve lists)
+START=20160328
+END=20160611
+case $TODAY in
+  20160328)  ${DIR}/sbin/Pcircjob -j34 -s$START -e$END ;;
+  20160404)  ${DIR}/sbin/Pcircjob -j34 -s$START -e$END ;;
+esac
+
+# First Tuesday of the month
+if [ ${DOW} -eq 2 -a ${DOM} -le 7 ]; then
+    # Job 14 (fee/fine statements): 1st Tuesday of every month
+    ${DIR}/sbin/Pcircjob -j14
+fi
+
+# Occasionally
+case $TODAY in
+20160319)
+    # Job 36 (turn off reserve lists) - usually once a quarter, as requested by CSC
+    ${DIR}/sbin/Pcircjob -j36 -s20160104 -e20160319
+    ;;
+esac
+
+# 2004-12-03 akohler: added code to filter out undesired records from files:
+#   crcnotes type 00 (request cancellation notices)
+# 2005-04-04 akohler: now also filtering out email fee/fine statements, to own file
+# 2006-01-24 akohler: remove email addresses from fee/fine notices
+RPTDIR=${DIR}/rpt
+# 2008-11-19 chunt: added code to filter out records with blank addresses and blank email addresses (from HOLD MAIL)
+# 20091123 drickard: added code to not process crcnotes.*.inp during winter closure, to avoid losing notices when not mailing;
+if [ ${NON_CLOSURE} = "True" ]; then
+  for FILE in `ls $RPTDIR/crcnotes.*.inp 2>/dev/null`; do
+    cp -p $FILE $FILE.bak
+    # 1) Filter out notices of type 00 (request cancellation notices)
+    # 2) Filter out notices of type 06 (fee/fine statements) with email addresses 
+    # 3) Filter out notices with blank addresses and blank email addresses (from HOLD MAIL)
+    # 4) Remove email addresses (field 3) for notices of type 05 (fee/fine notices)
+    grep -v "^00" $FILE.bak \
+      | grep -v "^06|97.2|[^|]" \
+      | grep -v "^06|09.1|[^|]" \
+      | grep -v "^[0-9][0-9]|[^|]*||[^|]*|[^|]*|[^|]*|[^|]*||" \
+      | sed "s/^\(05|[^|]*|\)[^|]*|/\1|/" \
+      > $FILE
+
+    # put email fee/fine statements (type 06, with content in 3rd field) in separate files
+    # 2009-04-13 drickard: modified the EMAILFILE value to distinguish feefine & general circ notices
+    EMAILFILE=${FILE}_feefine_${TODAY}.email
+    grep "^06|97.2|[^|]" $FILE.bak > ${EMAILFILE}
+    grep "^06|09.1|[^|]" $FILE.bak > ${EMAILFILE}
+    if [ ! -s ${EMAILFILE} ]; then
+	rm ${EMAILFILE}
+    fi
+
+    # 2009-04-13 drickard: added code to generate circ-notice email file
+    # select all entries with email (content in 3rd field) into separate file for emailing notices
+    EMAILFILE=${FILE}_circ_${TODAY}.email
+    grep "^[0-9][0-9]|97.2|[^|]" $FILE > ${EMAILFILE}
+    grep "^[0-9][0-9]|09.1|[^|]" $FILE > ${EMAILFILE}
+    if [ ! -s ${EMAILFILE} ]; then
+        rm ${EMAILFILE}
+    fi
+
+   # 2009-04-13 drickard: added code to identify print-only notices (no content in 3rd field)
+    NOMAILFILE=${FILE}.nomail
+    grep -v "^[0-9][0-9]|97.2|[^|]" $FILE > ${NOMAILFILE}
+    grep -v "^[0-9][0-9]|09.1|[^|]" $FILE > ${NOMAILFILE}
+    if [ -s ${NOMAILFILE} ]; then
+        mv ${NOMAILFILE} ${FILE}
+    else
+        rm ${NOMAILFILE}
+        rm ${FILE}
+    fi
+
+  done
+else
+  echo "Not processing circ notices during winter closure"
+fi
+
+# 2007-06-05 akohler: send email fee/fine statements
+# First Tuesday of the month
+if [ ${DOW} -eq 2 -a ${DOM} -le 7 ]; then
+    EMAILLOG=${DIR}/rpt/email_${TODAY}.log
+    /opt/local/bin/vger_email_finefee_notices > ${EMAILLOG} 2>&1
+    egrep "crcnotes|^Notices sent" ${EMAILLOG} \
+      | mailx -s "Email fee/fine notices sent ${TODAY}" \
+        cmedina@library.ucla.edu lit-libweb@library.ucla.edu
+fi
+
+# 2007-10-01 chunt: export Voyager monthly circulation stats
+# for the Public Service Stats database.
+# First of the month
+if [ ${DOM} -eq 1 ]; then
+    /opt/local/bin/vger_circ_stats_export
+fi
+
+# 2005-01-11 akohler: every day, generate file of course reserves data for outside consumption
+#   Related to circjob 34
+/opt/local/bin/vger_extract_reserves_data
+
+# 2009-03-23 drickard: starting ca. 6 April, will auto-generate circulation email notices
+# 2009-11-19 drickard: adding logic to not mail during closure, modeled on logic from vger_bar
+if [ ${NON_CLOSURE} = "True" ]; then
+  /opt/local/bin/vger_email_circ_notices
+else
+  echo "Not mailing circ notices during winter closure"
+fi

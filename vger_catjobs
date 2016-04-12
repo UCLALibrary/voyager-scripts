@@ -1,0 +1,92 @@
+#!/bin/ksh
+
+# Voyager cat jobs, run by userid voyager from cron
+# ksh because it calls voyager.env
+# Last revised: 20080911 akohler
+
+# Show usage
+_Usage () {
+  echo "Usage: `basename $0` filmntv|ucla jobnumber (11,12,13)"
+}
+
+# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
+. /opt/local/bin/vger_getenv
+
+# Each Voyager training and production db has its own scripts directory
+# Script names begin with T for training and P for production
+# Voyager and Oracle must be up
+case `hostname` in
+eliot|wells )
+    SERVER=production			# production server
+    ;;
+butler|collins )
+    SERVER=test				# test server
+    ;;
+* )
+    echo "$0: this script can run only on a Voyager server"
+    exit 1
+    ;;
+esac
+
+# Requires database, provided via $1
+if [ -z "$1" ]; then
+  DB=""
+else
+  DB=$1
+fi
+
+case $DB in
+  filmntv )
+    DB=filmntvdb
+    # 31 Aug 2006 Need fully-qualified email address unless in /etc/aliases
+    MAILTO="lit-libweb@library.ucla.edu adoss@cinema.ucla.edu"
+    ;;
+  ucla )
+    DB=ucladb
+    # 31 Aug 2006 Need fully-qualified email address unless in /etc/aliases
+    MAILTO="lit-libweb@library.ucla.edu mariscal@library.ucla.edu ppriebe@library.ucla.edu"
+    ;;
+ * )
+    _Usage
+    exit 1
+    ;;
+esac
+
+# Requires job number to be provided via $2
+if [ -z "$2" ]; then
+    JOB=""
+else
+    JOB=$2
+fi
+
+DIR=${VGER_BASE}/${DB}
+
+# Stdout of Pcatjob is generally useless; email steps 1 & 2 mainly as reminder that job has run
+# Email entire catjob.log after step 3 - it contains the real output of all steps
+case $JOB in
+11 )
+    $DIR/sbin/Pcatjob -j${JOB} 2>&1 | mailx -s "GHC step 1 - ${SERVER} - ${DB}" ${MAILTO}
+    ;;
+12 )
+    $DIR/sbin/Pcatjob -j${JOB} 2>&1 | mailx -s "GHC step 2 - ${SERVER} - ${DB}" ${MAILTO}
+    ;;
+13 )
+    # For production ucladb only, save heading change info for later reporting
+    if [ ${DB} = ucladb -a ${SERVER} = production ]; then
+        # Get USERPASS for sqlplus
+        . ${DIR}/ini/voyager.env
+        # sqlplus path set above, via vger_getenv
+        sqlplus -S $USERPASS @/opt/local/bin/vger_before_global_heading_change.sql
+    fi
+
+    # Run the Voyager job, with this output just to LIT LWS
+    $DIR/sbin/Pcatjob -j${JOB} -Llissystem 2>&1 | mailx -s "GHC step 3 cron - ${SERVER} - ${DB}" lit-libweb@library.ucla.edu
+
+    # Send the whole log to the catalogers
+    cat $DIR/rpt/catjob.log | mailx -s "GHC step 3 - ${SERVER} - ${DB}" ${MAILTO}
+    ;;
+* )
+    _Usage
+    exit 1
+    ;;
+esac

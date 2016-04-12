@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# VGER_BASE
+. /opt/local/bin/vger_voyenv
+
+DIR=${VGER_BASE}/ucladb
+
+# Date info
+YEAR=`date "+%Y"`                              # year
+MONTH=`date "+%m"`                             # 1..12 
+DOM=`date "+%d"`                               # 1..31 
+EXPIRE_DATE=`expr ${YEAR} - 2`-${MONTH}-${DOM} # run date - 2 years
+
+# do the purge at quarter start--1 Jan/Apr/Jul/Oct
+if [ ${DOM} -eq 1 ] && [ ${MONTH} -eq 1 -o ${MONTH} -eq 4 -o ${MONTH} -eq 7 -o ${MONTH} -eq 10 ]; then
+  echo "Performing patron purge on 1st of quarter for patrons expired on/before ${EXPIRE_DATE}"
+  #7.X command
+  #${DIR}/sbin/Pcircjob -j39 -b -a ${EXPIRE_DATE} -z
+  #8.2 command below for when we update
+  ${DIR}/sbin/PpatronPrg -e ${EXPIRE_DATE} -z
+fi
+
+#-30-

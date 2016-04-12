@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# For cron
+BIN=/opt/local/bin
+. ${BIN}/vger_getenv
+
+# Meant to be called by userid oracle, with full login environment
+sqlplus -S '/ as sysdba' @${BIN}/vger_check_oracle_freespace.sql

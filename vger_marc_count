@@ -1,0 +1,25 @@
+#!/bin/sh
+
+if [ ! -z "$1" ]; then
+  FILES=$*
+else
+  echo Usage: $0 filespec
+  exit 1
+fi
+
+TMPFILE=/tmp/vmc.$$
+
+for FILE in `ls -1 $FILES`; do
+  /opt/local/bin/marcview $FILE > $TMPFILE
+  TOTCNT=`grep "^001" $TMPFILE | wc -l`
+  HOLCNT=`grep "^004" $TMPFILE | wc -l`
+  BIBCNT=`expr $TOTCNT - $HOLCNT`
+  BYTES=`wc -c <$FILE`
+  echo "FILE NAME  :" `basename $FILE`
+  echo "BYTE COUNT :" $BYTES
+  echo "BIB COUNT  :" $BIBCNT
+  echo "HOL COUNT  :" $HOLCNT
+  echo "TOTAL COUNT:" $TOTCNT
+  #echo $FILE $BIBCNT  bib / $HOLCNT hol / $TOTCNT total
+  rm $TMPFILE
+done

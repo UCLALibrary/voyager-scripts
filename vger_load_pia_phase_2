@@ -1,0 +1,75 @@
+#!/bin/ksh
+
+BIN=/opt/local/bin
+
+# For cron
+#. ${BIN}/vger_getenv
+. /export/home/voyager/.profile
+
+DB=ucladb
+BASE=${VGER_BASE}/${DB}
+SCHEMA=vger_support
+PASSWORD=`${BIN}/get_value.pl ${BIN}/vger_db_credentials ${SCHEMA}`
+
+# Everything happens here
+DIR=${BASE}/local/pia
+cd ${DIR}
+
+# Get data qualifying bib_ids for records to extract
+SQL=pia_phase_2_bibs.sql
+${BIN}/vger_sqlplus_run vger_support ${SQL}
+
+# Parse data from SQL and handle one record at a time
+BIBLIST=${SQL}.out
+cat ${BIBLIST} | while read BIBID VENDOR ACCOUNT; do
+
+  # Set bulk import profile based on vendor
+  case ${VENDOR} in
+    CIB ) PROFILE=PIACIB2
+          MAILTO="chengh@library.ucla.edu lihui@library.ucla.edu"
+          ;;
+    YBP ) # Handle Law account separately
+          if [ "${ACCOUNT}" = "174799" ]; then
+            PROFILE=PIAYBP2L
+            MAILTO="lentz@law.ucla.edu spadoni@law.ucla.edu"
+          else # All others are for Kinross Acq
+            PROFILE=PIAYBP2
+            MAILTO="bnavarre@library.ucla.edu fappel@library.ucla.edu"
+          fi
+          ;;
+    *   ) echo "ERROR: unsupported vendor ${VENDOR} - skipping"
+          continue
+          ;;
+  esac
+
+  BIBFILE=${BIBID}.mrc
+  # Pmarcexport appends, so make sure output file doesn't exist
+  rm -f ${BIBFILE}
+  # Finally, export the bib record
+  ${BASE}/sbin/Pmarcexport -o${BIBFILE} -rB -mR -t${BIBID}-${BIBID} -q
+
+  # Update bib records by adding patron information
+  UPDBIBFILE=${BIBFILE}_upd.mrc
+  ${DIR}/pia_phase_2_update_bibs.pl ${BIBFILE} ${UPDBIBFILE} ${SCHEMA} ${PASSWORD}
+
+  # Load updated bib record into Voyager to create order
+  $BIN/vger_bulkimport_file ${UPDBIBFILE} ucladb ${PROFILE} promptcat
+
+  # Rename log file and mail to interested parties
+  LOGFILE=${BIBFILE}.log
+  mv log.imp.${UPDBIBFILE}.bulk ${LOGFILE}
+  cat ${LOGFILE} | mailx -s "PIA order created" ${MAILTO} lit-libweb@library.ucla.edu
+
+  # Rename file of rejected records
+  if [ -f discard.imp.${UPDBIBFILE}.bulk ]; then
+    mv discard.imp.${UPDBIBFILE}.bulk ${BIBFILE}.rej.mrc
+  fi
+
+  # Delete unneeded files for this record
+  rm -f ${BIBID}*
+
+done # end of cat / while read
+
+# Remove list of records 
+rm -f ${BIBLIST}
+

@@ -1,0 +1,34 @@
+#!/bin/sh
+# For each DATA file in the current directory,
+#   makes a formatted LABEL file which must accompany files of MARC records sent to OCLC
+# Last revised: 20090615 akohler
+
+if [ "$1" ]; then
+  PROJECT=$1
+else
+  echo "Usage: $0 PROJECT [SYMBOL] [YYYYMMDD]"
+  exit 1
+fi
+
+if [ "$2" ]; then
+  SYMBOL=$2
+else
+  SYMBOL=CLU
+fi
+
+if [ "$3" ]; then
+  YYYYMMDD=$3
+else
+  YYYYMMDD=`date "+%Y%m%d"`
+fi
+
+for FILE in `ls DATA.* 2>/dev/null`; do
+  LABELFILE=`echo ${FILE} | sed "s/DATA/LABEL/"`
+  COUNT=`/opt/local/bin/marcview ${FILE} | grep "^001" | wc -l | sed "s/ //g"`
+  echo "DAT  ${YYYYMMDD}000000.0" > ${LABELFILE}
+  echo "RBF  ${COUNT}" >> ${LABELFILE}
+  echo "DSN  ${FILE}" >> ${LABELFILE}
+  echo "ORS  ${SYMBOL}" >> ${LABELFILE}
+  echo "FDI  ${PROJECT}" >> ${LABELFILE}
+done
+

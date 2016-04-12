@@ -1,0 +1,64 @@
+#!/bin/sh
+# Uses Voyager bulk import utility to load records into Voyager
+#
+
+. /opt/local/bin/vger_getenv
+
+# Usage
+_show_usage () {
+  echo "USAGE: $0 file_to_load database profile [userid] [location]"
+  exit 1
+}
+
+# Required parameters: file to load, database, and bulk import profile
+if [ -n "$3" ]; then
+  LOADFILE=$1
+  DB=$2
+  PROFILE=$3
+else
+  _show_usage
+fi
+
+# Optional parameters: userid, location
+if [ -n "$4" ]; then
+  USERID=$4
+else
+  USERID=lisprogram
+fi
+
+if [ -n "$5" ]; then
+  LOCATION=$5
+else
+  LOCATION=lissystem
+fi
+
+BASE=/m1/voyager/${DB}
+
+# Use input filename to flag bulkimport's output files, which otherwise just have pid
+# E.g., log.imp.LOADFILE.bulk instead of default log.imp.pid.date
+# LOADFILE could include a path; strip it out, to make Pbulkimport happy - 
+#   it uses the -L BULKNAME parameter value extensively in filenames and paths.
+BULKNAME=`basename ${LOADFILE}`.bulk
+
+# Load the records
+echo Starting import, please wait...
+# With 9.1.1, use -M because sbin/Pbulkimport now checks (correctly) for other running processes
+OUTPUT=`${BASE}/sbin/Pbulkimport -f${LOADFILE} -i${PROFILE} -o${USERID} -l${LOCATION} -L${BULKNAME} -M`
+# OUTPUT looks like this:
+# bulkimport started. Reports will be in /m1/voyager/ucladb/rpt. Bulkimport Process id: 5243
+PID=`echo ${OUTPUT} | awk '{print $11}'`
+
+wait ${PID}
+
+echo Completed import for pid ${PID}
+
+# Move files created by bulk import to current directory
+mv ${BASE}/rpt/*.imp.${BULKNAME} .
+
+# Remove 0-byte import files
+for FILE in *.imp.*; do
+  if [ ! -s ${FILE} ]; then
+    rm ${FILE}
+  fi
+done
+

@@ -1,0 +1,46 @@
+#!/bin/sh
+
+# Split input file according to contents of column 456
+#   1: first 885
+#   2: first 1314 columns
+#   3: first 1743 columns
+#   else: entire line
+# Output filenames are name of input file with .1, .2, .3 or .else appended
+
+INFILE=$1
+if [ -z "$INFILE" ]
+then
+    echo "Usage: `basename $0` inputfile"
+    exit 1
+fi
+if [ ! -f "$INFILE" ]
+then
+    echo "`basename $0`: Error: can't find file $INFILE"
+    exit 1
+fi
+
+# If old output files exist, truncate them
+for CHAR in 1 2 3 else
+do
+    > $INFILE.$CHAR
+    chmod g+rw $INFILE.$CHAR
+done
+
+cat $INFILE | while read LINE
+do
+    CHAR=`echo "$LINE" | cut -c456`
+    case $CHAR in
+    1 )
+       echo "$LINE" | cut -c1-885  >> $INFILE.$CHAR
+       ;;
+    2 )
+       echo "$LINE" | cut -c1-1314 >> $INFILE.$CHAR
+       ;;
+    3 )
+       echo "$LINE" | cut -c1-1743 >> $INFILE.$CHAR
+       ;;
+    * ) 
+       echo "$LINE" >> $INFILE.else
+       ;;
+    esac
+done

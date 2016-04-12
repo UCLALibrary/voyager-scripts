@@ -1,0 +1,51 @@
+#!/bin/ksh
+
+# Extracts MARC bibliographic records from ucladb for BSLW processing
+# Last revised: 20090725 akohler
+
+. /opt/local/bin/vger_getenv
+
+DB=ucladb
+BASEDIR=/m1/voyager/ucladb/local/bslw/bib_extract
+BASE=bslw_bib
+SCHEMA=ucla_preaddb
+
+SQL=${BASEDIR}/${BASE}
+RECORDLIST=${SQL}.out
+RECORDS=BIB.MRC
+
+# Remove old MARC file (else Pmarcexport appends to it)
+rm -f ${RECORDS}
+
+# Get list of record ids
+/opt/local/bin/vger_sqlplus_run ${SCHEMA} ${SQL}
+
+# 2008418 akohler: now using default UTF-8, not MARC-8
+# Export marc records in UTF-8 encoding, using the list of record ids
+${VGER_BASE}/${DB}/sbin/Pmarcexport \
+  -o${RECORDS} \
+  -rB \
+  -mM \
+  -t${RECORDLIST}
+
+# Get any logs
+mv ${VGER_BASE}/${DB}/rpt/*.exp.* ${BASEDIR}
+
+# Transfer files to BSLW for processing and create log of stats
+EMAILLOG=${BASEDIR}/email.log
+FTPSITE=209.90.107.217
+echo "Monthly bib record updates for tclu1 have been uploaded to ftp://${FTPSITE} :" > ${EMAILLOG}
+(
+  echo "bin"
+  echo "put ${RECORDS}"
+  echo "bye"
+) | ftp -i -v ${FTPSITE}
+
+# Capture stats about file
+COUNT=`/opt/local/bin/marcsplit -c ${RECORDS} | tr -d '\n' |  awk '{print $3}'`
+BYTES=`wc -c < ${RECORDS}`
+echo "${RECORDS}: ${COUNT} records, ${BYTES} bytes" >> ${EMAILLOG}
+cat ${EMAILLOG} | mailx -s "UCLA bib file uploaded" lit-libweb@library.ucla.edu
+
+# Tidy up when done
+rm -f ${EMAILLOG} ${RECORDLIST} ${RECORDS}

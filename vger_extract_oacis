@@ -1,0 +1,48 @@
+#!/bin/ksh
+# ksh since sourcing voyager's .profile
+
+# Export Voyager bib & holdings records for Yale's OACIS project, a union catalog of Middle Eastern serials
+
+# For cron
+BIN=/opt/local/bin
+. /export/home/voyager/.profile
+
+DIR=/m1/voyager/ucladb/local/oacis
+BASE=/m1/voyager/ucladb
+IDFILE=/tmp/bibids.$$
+TMPFILE=/tmp/oacis.tmp.$$
+
+cd ${DIR}
+
+# Create supporting tables of MARC language data
+${BIN}/vger_sqlplus_run vger_subfields ${DIR}/create_041_043_parsed
+
+# Create table with main set of data to associated with extract
+${BIN}/vger_sqlplus_run vger_report ${DIR}/create_oacis_extract
+
+# Create file of bib ids to export, from previously created database table
+${BIN}/vger_sqlplus_run ucla_preaddb ${DIR}/vger_oacis_extract
+mv ${DIR}/vger_oacis_extract.out ${IDFILE}
+
+# Export marc bibs & mfhds in interleaved file, ignoring suppressed bibs
+${BASE}/sbin/Pmarcexport -o${TMPFILE} -rG -mM -t${IDFILE} -i
+
+# Show Pmarcexport log
+LOG=`ls -1rt ${BASE}/rpt/log.exp.* | tail -1`
+cat ${LOG}
+
+# Pmarcexport doesn't ignore suppressed mfds, so remove those
+${DIR}/remove_suppressed_mfhds.pl ${TMPFILE} oacis.mrc
+
+# Get stats
+${BIN}/vger_marc_count oacis.mrc
+
+# Make sure new location file isn't needed
+${BIN}/vger_sqlplus_run vger_report ${DIR}/check_locations
+cat ${DIR}/check_locations.out
+
+# Clean up
+rm ${IDFILE}
+rm ${LOG}
+rm ${TMPFILE}
+

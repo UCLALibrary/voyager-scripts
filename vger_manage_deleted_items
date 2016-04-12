@@ -1,0 +1,41 @@
+#!/bin/sh
+# Loads files of deleted Voyager items into Oracle tables
+# Created: 20080610 akohler
+# Revisions:
+# - 20080722 akohler: changed name of sqlldr control file
+# - 20080811 akohler: fixed cleanup to always delete control file
+
+_show_usage() {
+  echo "$0 database"
+  echo "  where database is one of: ethnodb filmntvdb ucladb ALL"
+  exit 1
+}
+
+DBLIST=$1
+case ${DBLIST} in
+  ethnodb ) ;;
+  filmntvdb ) ;;
+  ucladb ) ;;
+  ALL ) DBLIST="ethnodb filmntvdb ucladb" ;;
+  * ) _show_usage ;;
+esac
+
+# Get voyager environment
+. /opt/local/bin/vger_voyenv
+
+# One copy of control file, from which db-specific file is generated
+CTL=/m1/voyager/ucladb/local/cat/deleted_items.ctl
+
+for DB in ${DBLIST}; do
+  TMPCTL=/tmp/${DB}.ctl.$$
+  sed "s/foobar/${DB}/" ${CTL} > ${TMPCTL}
+  FILE=${VGER_BASE}/${DB}/rpt/delete.item
+
+  if [ -s ${FILE} ]; then
+    mv ${FILE} ${FILE}.bak
+    /opt/local/bin/vger_sqlldr_load vger_subfields ${FILE}.bak ${TMPCTL}
+  fi # if -s ${FILE}
+  # Clean up
+  rm -f ${FILE}.bak ${TMPCTL}
+done # DB
+

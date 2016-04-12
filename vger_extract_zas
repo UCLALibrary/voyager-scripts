@@ -1,0 +1,91 @@
+#!/bin/sh
+# Extract SRLF (ZAS) records for OCLC to process; OCLC returns cross-references which
+# later get loaded into Voyager.
+# WARNING: Don't run this the same day as vger_make_zas_lhrs, as they both upload to same directory
+#   on OCLC's FTP site, with (required) same file names based on date.
+
+# For cron
+BIN=/opt/local/bin
+. ${BIN}/vger_getenv
+
+# Get start/end dates for selecting records
+# Use provided dates, or default to previous Monday thru previous Sunday
+# Dates are YYYYMMDD
+if [ -n "$2" ]; then
+  START_DATE=$1
+  END_DATE=$2
+else
+  # Calculate END_DATE = previous Sunday
+  case `date "+%w"` in          # 0..6 for Sun..Sat
+    0 ) DELTA=-7;;		# Previous Sunday, not today
+    1 ) DELTA=-1;;
+    2 ) DELTA=-2;;
+    3 ) DELTA=-3;;
+    4 ) DELTA=-4;;
+    5 ) DELTA=-5;;
+    6 ) DELTA=-6;;
+  esac
+  # Set YEAR, MONTH, DAY based on DELTA
+  # Clear out the commandline parms, else they get sent to vger_ymd_delta
+  while [ -n "$1" ]; do
+    shift
+  done
+
+  . ${BIN}/vger_ymd_delta
+  END_DATE=${YEAR}${MONTH}${DAY}
+  # Go back another 6 days (to Monday before previous Sunday)
+  DELTA=-6
+  # Must use "set" command to assign $1 $2 $3 for vger_ymd_delta
+  set $YEAR $MONTH $DAY; . ${BIN}/vger_ymd_delta
+  START_DATE=${YEAR}${MONTH}${DAY}
+fi
+
+# Everything happens here
+DIR=/m1/voyager/ucladb/local/reclamation/zas
+cd ${DIR}
+
+DB=${VGER_BASE}/ucladb
+BASE=zas_extract
+COUNTER=1
+DATE=`date "+%y%m%d"` #YYMMDD
+PROJECT=P012226
+SYMBOL=ZAS
+
+# Get the full list of ids from database
+${BIN}/vger_sqlplus_run vger_report ${BASE} ${START_DATE} ${END_DATE}
+
+# Split list into chunks of 90K or less
+split -90000 ${BASE}.out ${BASE}.
+rm ${BASE}.out
+
+for LIST in `ls ${BASE}.?? 2>/dev/null`; do
+  OCLCNAME=DATA.D${DATE}.FILE${COUNTER}
+  COUNTER=`expr ${COUNTER} + 1`
+  if [ ${COUNTER} -eq 20 ]; then
+    DATE=`expr ${DATE} + 1`
+    COUNTER=1
+  fi
+
+  ${DB}/sbin/Pmarcexport -o${OCLCNAME} -rB -mM -t${LIST} -q
+
+  rm ${LIST}  
+done
+
+${BIN}/vger_make_oclc_label_files ${PROJECT} ${SYMBOL}
+
+# FTP the files to OCLC
+USER=tzas1
+PWD=`${BIN}/get_value.pl ${BIN}/oclc_credentials ${USER}`
+(
+  echo "user ${USER} ${PWD}"
+  echo "cd 'edx.ebsb.zas.ftp'"
+  echo "bin"
+  echo "mput DATA*"
+  echo "mput LABEL*"
+  echo "dir"
+  echo "quit"
+) | ftp -i -n -v edx.oclc.org
+
+# Clean up
+mv DATA* LABEL* ${DIR}/archive
+
