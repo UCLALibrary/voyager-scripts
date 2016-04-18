@@ -78,6 +78,7 @@ if [ "${REBUILDTABLE}" = "Y" ]; then
   echo "Recreating ${TABLE}..."
   SQLFILE=${OUTDIR}/create_${TABLE}.sql
   ( 
+    echo "TRUNCATE TABLE ${TABLE}";
     echo "DROP TABLE ${TABLE};"
     echo "CREATE TABLE ${TABLE}"
     echo "( record_id INT NOT NULL"
@@ -85,7 +86,6 @@ if [ "${REBUILDTABLE}" = "Y" ]; then
     echo ", subfield_seq INT NOT NULL"
     echo ", indicators CHAR(2) NULL"
     echo ", tag CHAR(4) NOT NULL"
-    echo "--, subfield NCLOB NULL"
     echo ", subfield NVARCHAR2(4000) NULL"
     echo ");"
     echo "GRANT SELECT ON ${TABLE} TO ucladb, ucla_preaddb, vger_support, vger_report WITH GRANT OPTION;"
