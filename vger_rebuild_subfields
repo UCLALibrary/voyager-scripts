@@ -98,6 +98,7 @@ fi
 CTLFILE=${TABLE}.ctl
 # Create control file for loading into oracle
 (
+  echo "UNRECOVERABLE"
   echo "LOAD DATA"
   echo "CHARACTERSET UTF8"
   echo "APPEND"
