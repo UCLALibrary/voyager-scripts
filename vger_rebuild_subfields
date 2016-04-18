@@ -78,7 +78,7 @@ if [ "${REBUILDTABLE}" = "Y" ]; then
   echo "Recreating ${TABLE}..."
   SQLFILE=${OUTDIR}/create_${TABLE}.sql
   ( 
-    echo "TRUNCATE TABLE ${TABLE}";
+    echo "TRUNCATE TABLE ${TABLE};"
     echo "DROP TABLE ${TABLE};"
     echo "CREATE TABLE ${TABLE}"
     echo "( record_id INT NOT NULL"
