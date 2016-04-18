@@ -274,12 +274,13 @@ then
 fi
 
 # /m1/incoming: keep for 30 days
+# 2015-07-02 akohler: Don't expire /m1/incoming during upgrades, 
+# since the Voyager Installation Kit (VIK) scripts have older dates....
 # First remove the files, symlinks etc, ...
-# 2015-07-02 akohler: Don't expire /m1/incoming during upgrades
-###find /m1/incoming ! -type d -mtime +30 | xargs rm -f
+find /m1/incoming ! -type d -mtime +30 | xargs rm -f
 # ... then remove all empty folders, except /m1/incoming itself
-###find /m1/incoming -type d  | grep -v '^/m1/incoming$' | sort -r | \
-###    xargs rmdir -s 2>/dev/null
+find /m1/incoming -type d  | grep -v '^/m1/incoming$' | sort -r | \
+    xargs rmdir -s 2>/dev/null
 
 # /tmp/log.exp.*: keep for 1 day
 # For example, /tmp/log.exp.20120202.1020
