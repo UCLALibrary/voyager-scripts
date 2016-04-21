@@ -7,8 +7,6 @@
 # This script exports and combines circulation data from 
 # Voyager. The files are meant to be imported to the 
 # Public Service Stats database.
-#
-# Last revised: 2007-10-01 chunt
 ############################################################
 
 
@@ -67,7 +65,7 @@ done
 
 # 20090727 added logic to clear out old output files; keep 3 months of files for debug needs drickard
 for TYPE in ${FILE_TYPES}; do
-  find ${CIRCDIR} -type f -name '${TYPE}_*.txt' -mtime +90 -exec rm {} \;
+  find ${CIRCDIR} -type f -name "${TYPE}_*.txt" -mtime +90 -exec rm {} \;
 done
 
 
