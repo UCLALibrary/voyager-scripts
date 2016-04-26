@@ -10,8 +10,8 @@
 LC_CTYPE=en_US.UTF-8
 export LC_CTYPE
 
-#JAVA=/usr/jdk/latest/bin/java	# path to 1.5 java on butler
-JAVA=/usr/local/bin/java
+BIN=/usr/local/bin
+JAVA=${BIN}/java
 
 # Supporting files are all here
 SUPPORTDIR=/m1/voyager/ucladb/local/rss
@@ -23,7 +23,9 @@ PROPSFILE=${SUPPORTDIR}/rss.properties
 #output directory used below for archiving one feed
 OUTPUTDIR=/opt/local/www/rss/feeds
 #date in YYYYMMDD format for archiving all_law feed
-YESTERDATE=`${SUPPORTDIR}/get_yesterday`
+DELTA=-1
+. ${BIN}/vger_ymd_delta
+YESTERDATE=${YEAR}${MONTH}${DAY}
 
 # Make sure supporting files are available
 for FILE in ${DATAJARFILE} ${JARFILE} ${PROPSFILE}; do
