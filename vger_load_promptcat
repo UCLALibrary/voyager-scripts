@@ -42,50 +42,36 @@ fi
 echo "Checking for files for date: ${DATE}"
 
 # For a given date, there may be several files:
-# Text files with info about the MARC files
-# - RPT.YDX.Dyymmdd
-# - RPT.YNK.Dyymmdd
-# - RPT-N$T.Dyymmdd
-# MARC files
-# - RCD.YDX.Dyymmdd.APPR
-# - RCD.YDX.Dyymmdd.FIRM
-# - RCD.YNK.Dyymmdd.APPR
-# - RCD.YNK.Dyymmdd.FIRM
-# - RCD.N$T.Dyymmdd
+# Starting May 1 2016, files now come via OCLC WCP service.
+# Files are in /metacoll/out/ongoing/wcp/
+# MARC files look like this:
+# - metacoll.CLU.wcp.FIRM.YDX.D20160502.T183027.1.mrc
+# - metacoll.CLU.wcp.APPR.YNK.D20160501.T183027.1.mrc
+# No text files any more?  Available via WCP web interface, not needed for load.
+# Still using YYMMDD for compatibility with BatchCat process;
+# hard-coded century below will break in 2100, if you're still using this you deserve it.
+
 (
-  echo "cd 'edx.pcat.clu'"
-  echo "asc"
-  echo "mget RPT.*.D${DATE}"
+  echo "cd /metacoll/out/ongoing/wcp/"
   echo "bin"
-  echo "mget RCD.*.D${DATE}.*"
+  echo "mget *.D20${DATE}.*.mrc"
   echo "quit"
-) | ftp -i -v edx.oclc.org
+) | ftp -i -v ftp2.oclc.org
 
 echo ""
 
 # List what we have, for convenience
-ls -l RPT* RCD*
-
-# Rename the text files
-for FILE in `ls RPT.* 2>/dev/null`; do 
-  case ${FILE} in 
-    RPT.YDX.D${DATE} ) mv ${FILE} ${LOADED}/YBP${DATE}.txt ;;
-    RPT.YNK.D${DATE} ) mv ${FILE} ${LOADED}/YNK${DATE}.txt ;;
-    RPT.N*           ) mv ${FILE} ${DIR}/netlibrary_temp/ ;;
-    * ) echo "*** Unknown file ${FILE} ***"
-        ;;
-  esac
-done
+ls -l *${DATE}*
 
 # Rename the MARC files
-# Approvals will be further processed and loaded; firm orders will be handled separately
-for FILE in `ls RCD.* 2>/dev/null`; do 
+# Approvals will be further processed and loaded; 
+# firm orders will be archived here, then handled separately via BatchCat.
+for FILE in `ls metacoll*.mrc 2>/dev/null`; do 
   case ${FILE} in
-    RCD.YDX.D${DATE}.APPR ) mv ${FILE} YBP_APPR${DATE}.mrc ;;
-    RCD.YNK.D${DATE}.APPR ) mv ${FILE} YNK_APPR${DATE}.mrc ;;
-    RCD.YDX.D${DATE}.FIRM ) mv ${FILE} ${LOADED}/YBP_FIRM${DATE}.mrc ;;
-    RCD.YNK.D${DATE}.FIRM ) mv ${FILE} ${LOADED}/YNK_FIRM${DATE}.mrc ;;
-    RCD.N*                ) mv ${FILE} ${DIR}/netlibrary_temp/ ;;
+    *.APPR.YDX.D20${DATE}.*.mrc ) mv ${FILE} YBP_APPR${DATE}.mrc ;;
+    *.APPR.YNK.D20${DATE}.*.mrc ) mv ${FILE} YNK_APPR${DATE}.mrc ;;
+    *.FIRM.YDX.D20${DATE}.*.mrc ) mv ${FILE} ${LOADED}/YBP_FIRM${DATE}.mrc ;;
+    *.FIRM.YNK.D20${DATE}.*.mrc ) mv ${FILE} ${LOADED}/YNK_FIRM${DATE}.mrc ;;
     * ) echo "*** Unknown file ${FILE} ***"
         ;;
   esac
