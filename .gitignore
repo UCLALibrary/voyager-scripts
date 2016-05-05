@@ -7,7 +7,8 @@
 *
 !vger_*
 
-# Include this script // TODO: Refactor calling scripts, rename this one.
+# Include these script // TODO: Refactor calling scripts, rename these?
+!get_value.pl
 !split_marc_file.sh
 
 # Include .gitignore
