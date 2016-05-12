@@ -63,15 +63,16 @@ echo ""
 # List what we have, for convenience
 ls -l *${DATE}*
 
-# Rename the MARC files
+# Rename the MARC files.
+# All records need pre-processing. 
 # Approvals will be further processed and loaded; 
-# firm orders will be archived here, then handled separately via BatchCat.
+# firm orders will be archived, then handled separately via BatchCat.
 for FILE in `ls metacoll*.mrc 2>/dev/null`; do 
   case ${FILE} in
     *.APPR.YDX.D20${DATE}.*.mrc ) mv ${FILE} YBP_APPR${DATE}.mrc ;;
     *.APPR.YNK.D20${DATE}.*.mrc ) mv ${FILE} YNK_APPR${DATE}.mrc ;;
-    *.FIRM.YDX.D20${DATE}.*.mrc ) mv ${FILE} ${LOADED}/YBP_FIRM${DATE}.mrc ;;
-    *.FIRM.YNK.D20${DATE}.*.mrc ) mv ${FILE} ${LOADED}/YNK_FIRM${DATE}.mrc ;;
+    *.FIRM.YDX.D20${DATE}.*.mrc ) mv ${FILE} YBP_FIRM${DATE}.mrc ;;
+    *.FIRM.YNK.D20${DATE}.*.mrc ) mv ${FILE} YNK_FIRM${DATE}.mrc ;;
     * ) echo "*** Unknown file ${FILE} ***"
         ;;
   esac
@@ -79,12 +80,12 @@ done
 
 echo ""
 
-# Approval files need pre-processing
+# 2016-05-12: All files need pre-processing
+# * Combine multiple 049 fields into one
 # * Add custom acquisitions info from db
-# * Split by loc code in 952 $b (added in previous step)
 SCHEMA=vger_support
 PWD=`${BIN}/get_value.pl ${BIN}/vger_db_credentials $SCHEMA`
-for FILE in Y*_APPR*.mrc; do 
+for FILE in Y*.mrc; do 
   if [ -f ${FILE} ]; then
     echo "Adding acq info to ${FILE}..."
     mv ${FILE} ${FILE}.bak
@@ -94,14 +95,28 @@ for FILE in Y*_APPR*.mrc; do
       exit 1
     fi
     rm ${FILE}.bak
+  fi
+done
 
+# Firms only: Nothing more to do here, so archive the files
+for FILE in Y*_FIRM*.mrc; do
+  if [ -f ${FILE} ]; then
+    mv ${FILE} ${LOADED}
+  fi
+done
+
+# Approvals only: Split by loc code in 952 $b (added in previous step)
+# Example: YBP_APPR160511.mrc results in YBP_APPR160511_ar.mrc and YBP_APPR160511_yr.mrc
+for FILE in Y*_APPR*.mrc; do
+  if [ -f ${FILE} ]; then
     echo "Splitting ${FILE} by location..."
     ${SCRIPTS}/split_by_952b.pl ${FILE}
     rm ${FILE} # no longer needed after new split file(s) created
   fi
 done
 
-# Split resulting files into max-60-record chunks for smaller POs
+# Approvals only: Split resulting files into max-60-record chunks for smaller POs
+# Example: YBP_APPR160511_yr.mrc results in YBP_APPR160511_yr.001.mrc and YBP_APPR160511_yr.002.mrc
 for FILE in Y*_APPR*.mrc; do
   if [ -f ${FILE} ]; then
     echo "Splitting ${FILE} into smaller chunks..."
