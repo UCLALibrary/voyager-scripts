@@ -60,6 +60,7 @@ ${BIN}/vger_send_edi_orders 2>&1 | mailx -s "EDI files sent" \
 
 # Retrieve EOD (order) files from various vendors
 ${BIN}/vger_load_gobi
-${BIN}/vger_load_harrassowitz
-${BIN}/vger_load_casalini
+# 20160528: CAS and HAR disabled for fiscal close
+#${BIN}/vger_load_harrassowitz
+#${BIN}/vger_load_casalini
 

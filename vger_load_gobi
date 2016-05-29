@@ -102,10 +102,10 @@ for LOADFILE in *.mrc; do
         PROFILE=GOBI
         CONTACTS="on-order@library.ucla.edu lit-libweb@library.ucla.edu"
         ### Uncomment this section vvvv during fiscal close
-        #echo "${LOADFILE} NOT LOADED DURING FISCAL CLOSE"
-        #if [ ! -d pending ]; then mkdir pending; fi
-        #mv ${LOADFILE} ${DIR}/pending
-        #continue # back to "for LOADFILE"
+        echo "${LOADFILE} NOT LOADED DURING FISCAL CLOSE"
+        if [ ! -d pending ]; then mkdir pending; fi
+        mv ${LOADFILE} ${DIR}/pending
+        continue # back to "for LOADFILE"
         ### Uncomment this section ^^^^ during fiscal close
         ;;
     esac
