@@ -1,8 +1,6 @@
 #!/m1/shared/bin/perl -w
 
-#use FindBin;
-#use lib "$FindBin::Bin";
-use lib "/opt/local/perl";
+use lib "/usr/local/bin/voyager/perl";
 use MARC::Batch;
 use UCLA_Batch; #for UCLA_Batch::safenext to better handle data errors
 
