@@ -2,17 +2,60 @@
 # For server rebuild, consider putting scripts in separate directory;
 # for now, exclude binaries from git via .gitignore.
 
-# Instead of manually listing everything to ignore, ignore everything
-# and then include vger* via negation.
-*
-!vger_*
-
-# Include these script // TODO: Refactor calling scripts, rename these?
-!get_value.pl
-!split_marc_file.sh
-
-# Include .gitignore
-!.gitignore
-
 # Exclude files with sensitive info.
 *_credentials
+
+# Exclude standard Oracle scripts installed with Voyager
+coraenv
+dbhome
+oraenv
+
+# Exclude binaries (real and symlinked) and non-Voyager scripts
+apachectl
+build_marc_subfield_file
+captoinfo
+clear
+curl
+curl-config
+diskname
+get_pid_from_port
+git*
+iconv
+idn
+infocmp
+infotocap
+ish
+ishcnf
+jar
+java*
+ldap*
+ll
+lrt
+lsof
+marcsplit
+marcview
+ncurses5-config
+neon-config
+note
+perl
+reset
+rollcall
+rsync
+sssu
+sssu.sh
+sudo
+sudoedit
+sudoreplay
+svn*
+tack
+tic
+toe
+tput
+tset
+
+# Exclude non-Voyager subdirectories
+sparcv7
+sparcv9
+
+# Exclude new subdirectory - scripts will move here shortly
+voyager
