@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Called by userid root in /opt/local/bin/vger_daily
+# Called by userid root in /usr/local/bin/vger_daily
 # Oracle and Voyager are down: it is safe to ufsdump/ufsrestore /oracle and /m1
 
 #set -x

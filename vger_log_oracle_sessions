@@ -1,6 +1,6 @@
 #!/bin/sh
 
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 DIR=/m1/voyager/ucladb/local/system
 SCRIPT=vger_log_oracle_sessions
 

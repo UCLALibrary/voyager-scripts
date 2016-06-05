@@ -4,7 +4,7 @@ LC_CTYPE=en_US.UTF-8
 export LC_CTYPE
 
 JAVA=/usr/local/bin/java
-DIR=/opt/local/java
+DIR=/usr/local/java
 
 if [ ! -x ${JAVA} ]
 then

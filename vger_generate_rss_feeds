@@ -21,7 +21,7 @@ JARFILE=${SUPPORTDIR}/rss-feeds.jar
 # Properties file describes which directories hold the .xml files
 PROPSFILE=${SUPPORTDIR}/rss.properties
 #output directory used below for archiving one feed
-OUTPUTDIR=/opt/local/www/rss/feeds
+OUTPUTDIR=/usr/local/www/rss/feeds
 #date in YYYYMMDD format for archiving all_law feed
 DELTA=-1
 . ${BIN}/vger_ymd_delta
@@ -48,7 +48,7 @@ fi
 # Temporary override until/unless manifests are rebuilt:
 #$JAVA -jar $DATAJARFILE $PROPSFILE
 #$JAVA -jar $JARFILE $PROPSFILE
-J=/opt/local/java
+J=/usr/local/java
 CLASSPATH=$J/spring.jar:$J/oracle.jar:$J/commons.jar:$J/jdom.jar:$J/rome-0.8.jar
 
 $JAVA -cp $CLASSPATH:$DATAJARFILE edu.ucla.library.libservices.beans.FeedDataBuilder $PROPSFILE

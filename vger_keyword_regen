@@ -2,7 +2,7 @@
 # ksh apparently needed since REGEN.keyword is ksh
 
 # For VGER_BASE
-. /opt/local/bin/vger_getenv
+. /usr/local/bin/vger_getenv
 
 DB=$1
 case ${DB} in

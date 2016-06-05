@@ -17,8 +17,8 @@ ORACLE_DOC=$ORACLE_BASE/doc			export ORACLE_DOC
 ORA_CONFIG=$ORACLE_BASE/admin/$ORACLE_SID/pfile	export ORA_CONFIG
 ORA_LOG=$ORACLE_BASE/admin/$ORACLE_SID/bdump	export ORA_LOG
 
-# See /opt/local/bin/oraenv
-ORACLE_HOME=`/opt/local/bin/dbhome $ORACLE_SID`	export ORACLE_HOME
+# See /usr/local/bin/oraenv
+ORACLE_HOME=`/usr/local/bin/dbhome $ORACLE_SID`	export ORACLE_HOME
 
 # See /export/home/oracle/.profile
 ORA_NET=$ORACLE_HOME/network/admin		export ORA_NET

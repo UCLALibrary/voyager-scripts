@@ -1,11 +1,11 @@
 #!/bin/ksh
 
 # local Voyager env variables
-. /opt/local/bin/vger_getenv
+. /usr/local/bin/vger_getenv
 
 # variables to execute java
 JAVA=/usr/local/bin/java
-JAVADIR=/opt/local/java
+JAVADIR=/usr/local/java
 PROPFILE=${JAVADIR}/etds.props
 
 DB=ucladb
@@ -27,7 +27,7 @@ export LC_CTYPE
 rm -f ${BASEDIR}/*.xml
 
 # Get list of record ids
-/opt/local/bin/vger_sqlplus_run ${READ_SCHEMA} ${READ_SQL}
+/usr/local/bin/vger_sqlplus_run ${READ_SCHEMA} ${READ_SQL}
 
 # Each line consists of a bib id, a colon and a ProQuest id
 sed 's/:/ /' ${RECORDLIST} | while read BIB_ID PROQ_ID
@@ -71,7 +71,7 @@ do
   zip -jqr ${ZIP_FILE} ${BASEDIR}/working/*
 
   # send to merritt
-  /opt/local/bin/curl -k -u uclalib:fr9Stucl \
+  /usr/local/bin/curl -k -u uclalib:fr9Stucl \
     -F "file=@${ZIP_FILE}" \
     -F "type=container" \
     -F "submitter=uclalib" \
@@ -85,6 +85,6 @@ do
 
 done
 
-/opt/local/bin/vger_sqlplus_run ${WRITE_SCHEMA} ${WRITE_SQL}
+/usr/local/bin/vger_sqlplus_run ${WRITE_SCHEMA} ${WRITE_SQL}
 rm -f ${RECORDLIST}
 

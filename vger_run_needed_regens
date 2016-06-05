@@ -24,7 +24,7 @@ _get_ratio() {
 # Main script starts here
 
 # For cron, VGER_BASE
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . ${BIN}/vger_getenv
 
 echo "\nChecking sizes of production keyword indexes:"

@@ -1,6 +1,6 @@
 #!/bin/ksh
 
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 
 # For cron
 #. ${BIN}/vger_getenv

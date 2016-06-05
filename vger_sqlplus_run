@@ -28,7 +28,7 @@ BIN=/usr/local/bin
 # schema is required.
 if [ -n "$1" ]; then
   SCHEMA=$1
-  PASSWORD=`/opt/local/bin/get_value.pl /opt/local/bin/vger_db_credentials $SCHEMA`
+  PASSWORD=`/usr/local/bin/get_value.pl /usr/local/bin/vger_db_credentials $SCHEMA`
   if [ "$PASSWORD" = "" ]; then
     case $SCHEMA in
       ethnodb|filmntvdb|ucladb) 

@@ -18,7 +18,7 @@ fi
 
 # Set $YEAR, $MONTH and $DAY from current date or $1, $2 and $3
 # Set $LAST_YYYYMM, $THIS_YYYYMM and $NEXT_YYYYMM from $YEAR and $MONTH
-. /opt/local/bin/vger_ymd
+. /usr/local/bin/vger_ymd
 #echo $YEAR $MONTH $DAY $DELTA
 
 DAY=`expr $DAY + $DELTA`

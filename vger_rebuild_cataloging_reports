@@ -3,7 +3,7 @@
 # Takes about 90 minutes to run
 
 # Include environment for cron
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . ${BIN}/vger_getenv
 
 SQL=/m1/voyager/ucladb/local/cat/reports/build_cat_report_tables

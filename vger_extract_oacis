@@ -4,7 +4,7 @@
 # Export Voyager bib & holdings records for Yale's OACIS project, a union catalog of Middle Eastern serials
 
 # For cron
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . /export/home/voyager/.profile
 
 DIR=/m1/voyager/ucladb/local/oacis

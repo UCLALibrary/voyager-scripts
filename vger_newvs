@@ -32,7 +32,7 @@
 #               of awk script is counted as an ascopac process
 #               when newvs is run as voyager.
 #               Original /m1/utility/newvs unchanged; change is only
-#               in local copy /opt/local/bin/vger_newvs
+#               in local copy /usr/local/bin/vger_newvs
 if [[ $1 = '-q' ]]
   then
     ps -u oracle -o args | awk '/LOCAL=NO/ {exit 1}'

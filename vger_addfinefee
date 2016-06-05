@@ -61,7 +61,7 @@ SERVER=`hostname`.library.ucla.edu
 #changed to use actual latest java executable drickard 20100709
 #JAVA=/usr/jdk/latest/bin/java
 JAVA=/usr/local/bin/java
-JCH=/opt/local/java
+JCH=/usr/local/java
 CLASSPATH=$JCH/vapi-core.jar:$JCH/vapi-client.jar:$JCH/commons-cli-1.0.jar:$JCH/addfinefee.jar
 PROPERTIES_FILE=$JCH/voyager.properties
 

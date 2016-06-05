@@ -2,7 +2,7 @@
 # Create CLUSP (UCLA shared print) OCLC LHRs
 
 # Get full voyager environment
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . ${BIN}/vger_getenv
 
 # Everything happens here
@@ -40,7 +40,7 @@ else
     shift
   done
 
-  . /opt/local/bin/vger_ymd_delta
+  . /usr/local/bin/vger_ymd_delta
   LASTDATE=${YEAR}${MONTH}${DAY}
 fi
 

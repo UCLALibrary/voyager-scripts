@@ -4,7 +4,7 @@
 # Created: 20071205 akohler
 
 # Include environment for cron
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . ${BIN}/vger_getenv
 
 DIR=/m1/voyager/ucladb/local/cat

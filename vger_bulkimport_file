@@ -2,7 +2,7 @@
 # Uses Voyager bulk import utility to load records into Voyager
 #
 
-. /opt/local/bin/vger_getenv
+. /usr/local/bin/vger_getenv
 
 # Usage
 _show_usage () {

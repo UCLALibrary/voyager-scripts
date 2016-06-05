@@ -2,7 +2,7 @@
 # Must be run as oracle or other user in dba group
 
 # For ORACLE_HOME and other environment
-. /opt/local/bin/vger_oraenv
+. /usr/local/bin/vger_oraenv
 
 # For running SQL commands
 SQLDBA="${ORACLE_HOME}/bin/sqlplus -S /nolog"

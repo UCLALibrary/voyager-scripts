@@ -17,7 +17,7 @@ cd ${DIR}
 
 # Faculty and staff email addresses
 ## extra logic to handle server switch coming 20130223 drickard
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 USER=ext_dir_ret9
 PWD=`${BIN}/get_value.pl ${BIN}/ais_credentials ${USER}`
 (

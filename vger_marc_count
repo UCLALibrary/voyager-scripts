@@ -10,7 +10,7 @@ fi
 TMPFILE=/tmp/vmc.$$
 
 for FILE in `ls -1 $FILES`; do
-  /opt/local/bin/marcview $FILE > $TMPFILE
+  /usr/local/bin/marcview $FILE > $TMPFILE
   TOTCNT=`grep "^001" $TMPFILE | wc -l`
   HOLCNT=`grep "^004" $TMPFILE | wc -l`
   BIBCNT=`expr $TOTCNT - $HOLCNT`

@@ -28,7 +28,7 @@ _get_max_id() {
 }
 
 # Set VGER_BASE and other voyager & oracle environment, so we can run from cron
-. /opt/local/bin/vger_getenv
+. /usr/local/bin/vger_getenv
 
 DB=$1
 case ${DB} in

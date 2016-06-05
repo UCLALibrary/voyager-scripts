@@ -3,7 +3,7 @@
 # Send edi order files to vendors.
 
 # Voyager environment for cron
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . ${BIN}/vger_getenv
 
 # The magic happens here

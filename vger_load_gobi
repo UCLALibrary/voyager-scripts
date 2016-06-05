@@ -2,7 +2,7 @@
 # Retrieves and loads YBP GOBI records (brief bib/order records)
 # Intended to be run daily, to process previous day's file if present
 
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 # Get full environment for cron
 . ${BIN}/vger_getenv
 
@@ -15,7 +15,7 @@ FTPDIR=orders
 
 # Retrieve new files for all accounts
 for USER in UCLA uclacl; do
-  PASSWORD=`/opt/local/bin/get_value.pl ${DIR}/../config/ybp_credentials ${USER}`
+  PASSWORD=`/usr/local/bin/get_value.pl ${DIR}/../config/ybp_credentials ${USER}`
   NEWLIST=${DIR}/gobi_current_${USER}.lst
   OLDLIST=${DIR}/gobi_previous_${USER}.lst
 

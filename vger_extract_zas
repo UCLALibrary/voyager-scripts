@@ -5,7 +5,7 @@
 #   on OCLC's FTP site, with (required) same file names based on date.
 
 # For cron
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . ${BIN}/vger_getenv
 
 # Get start/end dates for selecting records

@@ -13,7 +13,7 @@ LOGADM_CONF=/usr/local/etc/vger_logadm.conf export LOGADM_CONF
 
 # Set VGER_BASE
 #   VGER_BASE=/m1/voyager
-. /opt/local/bin/vger_voyenv
+. /usr/local/bin/vger_voyenv
 
 # The asterisk in
 #   ORACLE_HOME=/oracle/app/oracle/product/*/db_1 represents one directory and
@@ -21,7 +21,7 @@ LOGADM_CONF=/usr/local/etc/vger_logadm.conf export LOGADM_CONF
 # Set ORACLE_BASE ORACLE_HOME
 #   ORACLE_BASE=/oracle/app/oracle
 #   ORACLE_HOME=/oracle/app/oracle/product/*/db_1
-. /opt/local/bin/vger_getenv
+. /usr/local/bin/vger_getenv
 
 
 #====== Apache logs ======#

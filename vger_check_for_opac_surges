@@ -1,6 +1,6 @@
 #!/bin/sh
 
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . ${BIN}/vger_getenv
 
 LOG=/m1/shared/apache2/logs/ucladb_vwebv/access_log

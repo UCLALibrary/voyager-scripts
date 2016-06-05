@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # VGER_BASE
-. /opt/local/bin/vger_voyenv
+. /usr/local/bin/vger_voyenv
 
 DIR=${VGER_BASE}/ucladb
 

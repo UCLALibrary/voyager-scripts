@@ -5,7 +5,7 @@
 #   but can run for 1 specific database via parameter.
 
 # Get environment for cron
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . ${BIN}/vger_getenv
 
 if [ -z "$2" ]; then

@@ -2,7 +2,7 @@
 
 ############################################################
 # Voyager Circulation Stats Export, called from 
-# /opt/local/bin/vger_circjobs.
+# /usr/local/bin/vger_circjobs.
 #
 # This script exports and combines circulation data from 
 # Voyager. The files are meant to be imported to the 
@@ -11,7 +11,7 @@
 
 
 # VGER_BASE
-. /opt/local/bin/vger_voyenv
+. /usr/local/bin/vger_voyenv
 
 # Each Voyager database has its own directory
 # Voyager and Oracle must be up
@@ -20,7 +20,7 @@ eliot|wells )
     SERVER=prod                 # production server
 
     # Run jobs for ucladb, but not for any other database
-    # /opt/local/bin/vger_daily will take care of rotating logs
+    # /usr/local/bin/vger_daily will take care of rotating logs
     DIR=${VGER_BASE}/ucladb
     ;;
 butler|collins )
@@ -40,7 +40,7 @@ umask 007
 
 CIRCDIR=${DIR}/local/circ
 
-. /opt/local/bin/vger_ymd
+. /usr/local/bin/vger_ymd
 
 STARTDATE=${LAST_YYYYMM}01
 ENDDATE=${THIS_YYYYMM}01
@@ -51,7 +51,7 @@ MERGE_TYPES="fees lost overdue_recall recall"
 FILE_TYPES="charges discharges overdue renewals cct"
 
 for TYPE in ${QUERY_TYPES}; do 
-  /opt/local/bin/vger_sqlplus_run vger_support ${CIRCDIR}/monthly_${TYPE} ${STARTDATE} ${ENDDATE}
+  /usr/local/bin/vger_sqlplus_run vger_support ${CIRCDIR}/monthly_${TYPE} ${STARTDATE} ${ENDDATE}
 done
 
 for TYPE in ${SIMPLE_TYPES}; do

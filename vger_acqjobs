@@ -1,9 +1,9 @@
 #!/bin/sh
 
-# Voyager acq jobs, run by userid voyager from /opt/local/bin/vger_daily
+# Voyager acq jobs, run by userid voyager from /usr/local/bin/vger_daily
 # Could also be run by userid law
 
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 # VGER_BASE
 . ${BIN}/vger_voyenv
 
@@ -15,7 +15,7 @@ eliot|wells )
     SERVER=prod			# production server
 
     # Run jobs for ucladb, but not for any other database
-    # /opt/local/bin/vger_daily will take care of rotating logs
+    # /usr/local/bin/vger_daily will take care of rotating logs
     DIR=$VGER_BASE/ucladb
     ;;
 butler|collins )

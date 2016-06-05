@@ -9,7 +9,7 @@ else
   INVOICE_ID=$1
 fi
 
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 DIR=/m1/voyager/ucladb/local/vbbi
 cd ${DIR}
 

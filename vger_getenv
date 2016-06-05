@@ -10,8 +10,8 @@
 
 case `hostname` in
     wells|collins )
-	. /opt/local/bin/vger_oraenv
+	. /usr/local/bin/vger_oraenv
 	;;
 esac
-. /opt/local/bin/vger_voyenv
+. /usr/local/bin/vger_voyenv
 

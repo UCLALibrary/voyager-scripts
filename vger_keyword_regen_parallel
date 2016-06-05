@@ -9,7 +9,7 @@
 # Created: 20080219 akohler
  
 # For VGER_BASE
-. /opt/local/bin/vger_getenv
+. /usr/local/bin/vger_getenv
 
 # Command line params not really necessary, but helps prevent launching a regen accidentally
 DB=$1

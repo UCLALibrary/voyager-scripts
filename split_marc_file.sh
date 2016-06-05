@@ -17,7 +17,7 @@ else
   exit 1
 fi
 
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 
 # Split filename into basename and extension
 # Hoops needed for EXT since can't use basename command unless extension is known...

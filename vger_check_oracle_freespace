@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # For cron
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . ${BIN}/vger_getenv
 
 # Meant to be called by userid oracle, with full login environment

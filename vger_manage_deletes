@@ -27,7 +27,7 @@ case ${TYPELIST} in
 esac
 
 # Get voyager environment
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . ${BIN}/vger_voyenv
 
 for DB in ${DBLIST}; do

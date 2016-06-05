@@ -3,7 +3,7 @@
 #  for Patron Initiated Acquisitions (PIA) project.
 
 # Voyager environment for cron
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . ${BIN}/vger_getenv
 
 # Mandatory parameters

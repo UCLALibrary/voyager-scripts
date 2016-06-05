@@ -47,7 +47,7 @@
 #           [enter root password when prompted]
 #           # fsck -y /export/home
 #           # fsck -y /m1
-#           # fsck -y /opt/local
+#           # fsck -y /usr/local
 #           # fsck -y /oracle
 #           # fsck -y /vger
 #	If any fsck makes repairs, repeat it until it makes no repairs.

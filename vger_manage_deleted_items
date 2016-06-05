@@ -21,7 +21,7 @@ case ${DBLIST} in
 esac
 
 # Get voyager environment
-. /opt/local/bin/vger_voyenv
+. /usr/local/bin/vger_voyenv
 
 # One copy of control file, from which db-specific file is generated
 CTL=/m1/voyager/ucladb/local/cat/deleted_items.ctl
@@ -33,7 +33,7 @@ for DB in ${DBLIST}; do
 
   if [ -s ${FILE} ]; then
     mv ${FILE} ${FILE}.bak
-    /opt/local/bin/vger_sqlldr_load vger_subfields ${FILE}.bak ${TMPCTL}
+    /usr/local/bin/vger_sqlldr_load vger_subfields ${FILE}.bak ${TMPCTL}
   fi # if -s ${FILE}
   # Clean up
   rm -f ${FILE}.bak ${TMPCTL}

@@ -10,7 +10,7 @@ _Usage () {
 }
 
 # Set VGER_BASE and other voyager & oracle environment, so we can run from cron
-. /opt/local/bin/vger_getenv
+. /usr/local/bin/vger_getenv
 
 # Each Voyager training and production db has its own scripts directory
 # Script names begin with T for training and P for production
@@ -76,7 +76,7 @@ case $JOB in
         # Get USERPASS for sqlplus
         . ${DIR}/ini/voyager.env
         # sqlplus path set above, via vger_getenv
-        sqlplus -S $USERPASS @/opt/local/bin/vger_before_global_heading_change.sql
+        sqlplus -S $USERPASS @/usr/local/bin/vger_before_global_heading_change.sql
     fi
 
     # Run the Voyager job, with this output just to LIT LWS

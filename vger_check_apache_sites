@@ -2,7 +2,7 @@
 # Check list of apache sites for errors
 
 # Full environment for cron
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . ${BIN}/vger_getenv
 
 # Arguments

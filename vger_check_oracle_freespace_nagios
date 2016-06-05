@@ -10,7 +10,7 @@ _get_full_tablespaces() {
 # Get ucladb USERPASS credentials, which have necessary rights.
 . /m1/voyager/ucladb/ini/voyager.env
 # Get Oracle environment for VGER SID, needed for nagios OS user.
-. /opt/local/bin/vger_oraenv
+. /usr/local/bin/vger_oraenv
 
 sqlplus -S ${USERPASS} << EOQ
 -- Parameter from caller:

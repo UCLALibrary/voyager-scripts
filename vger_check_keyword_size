@@ -4,7 +4,7 @@
 # Last revised: 20080718 akohler
 
 # For cron, VGER_BASE
-. /opt/local/bin/vger_getenv
+. /usr/local/bin/vger_getenv
 
 
 echo "\nChecking sizes of production keyword indexes:"

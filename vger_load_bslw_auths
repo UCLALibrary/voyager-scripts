@@ -54,7 +54,7 @@ for LOADFILE in *.mrc; do
 
   if [ -s ${LOADFILE} ]; then
     echo "${LOADFILE} : loading with profile ${PROFILE}..."
-    /opt/local/bin/vger_bulkimport_file ${LOADFILE} ${DB} ${PROFILE}
+    /usr/local/bin/vger_bulkimport_file ${LOADFILE} ${DB} ${PROFILE}
 
     # Rename log file
     if [ -f log.imp.${LOADFILE}.bulk ]; then
@@ -84,7 +84,7 @@ done
 echo ""
 for FILE in *.mrc; do
   if [ -s ${FILE} ]; then
-    /opt/local/bin/marcview ${FILE} > `basename ${FILE} .mrc`.txt
+    /usr/local/bin/marcview ${FILE} > `basename ${FILE} .mrc`.txt
   else
     echo "${FILE} : deleted empty file"
     rm ${FILE}

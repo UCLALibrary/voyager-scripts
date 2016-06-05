@@ -11,7 +11,7 @@ fi
 set --
 
 # Get full voyager & oracle environment for cron
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 . /export/home/voyager/.profile
 
 # Mandatory parameter: date in YYMMDD

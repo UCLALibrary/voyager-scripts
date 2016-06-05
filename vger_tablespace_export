@@ -5,7 +5,7 @@
 # - 20071211 akohler: changed GRANTS from n to y
 
 # For ORACLE_HOME and other environment
-. /opt/local/bin/vger_oraenv
+. /usr/local/bin/vger_oraenv
 
 # For running SQL commands
 SQLDBA="${ORACLE_HOME}/bin/sqlplus -S /nolog"

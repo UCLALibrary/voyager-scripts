@@ -5,9 +5,9 @@
 #  since Monday of the previous week, but can use any date via command line.
 
 # Environment for running via cron: need both voyager and oracle
-. /opt/local/bin/vger_getenv
+. /usr/local/bin/vger_getenv
 
-BIN=/opt/local/bin
+BIN=/usr/local/bin
 BASE=/m1/voyager/ucladb
 DIR=${BASE}/local/lhr/clu
 BASEFILE=extract_lhr
@@ -37,7 +37,7 @@ else
     shift
   done
 
-  . /opt/local/bin/vger_ymd_delta
+  . /usr/local/bin/vger_ymd_delta
   LASTDATE=${YEAR}${MONTH}${DAY}
 fi
 

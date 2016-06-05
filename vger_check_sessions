@@ -1,4 +1,4 @@
 #!/bin/sh
 
 # Meant to be called by userid oracle, with full login environment
-sqlplus -S '/ as sysdba' @/opt/local/bin/vger_oracle_sessions.sql
+sqlplus -S '/ as sysdba' @/usr/local/bin/vger_oracle_sessions.sql
