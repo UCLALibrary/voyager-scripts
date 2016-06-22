@@ -4,14 +4,14 @@
 #
 # Last revised: 2007-04-06 akohler
 
-# Get Oracle & Voyager environment
-. /usr/local/bin/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 BASE=/m1/voyager/ucladb/local/reserves/vger_extract_reserves_data
 FILE=voyager_reserves_data.txt
 
 # Extract current course reserves data by running ${BASE}.sql to create ${BASE}.out
-/usr/local/bin/vger_sqlplus_run ucla_preaddb ${BASE}
+${VGER_SCRIPT}/vger_sqlplus_run ucla_preaddb ${BASE}
 
 # Make file available via ftp, with new name
 (

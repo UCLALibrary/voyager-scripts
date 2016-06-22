@@ -3,8 +3,8 @@
 # This should only be run by voyager
 # Hardcoded for ucladb
 
-# Get voyager environment
-. /usr/local/bin/vger_voyenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 SBIN=/m1/voyager/ucladb/sbin
 

@@ -3,7 +3,8 @@
 # Extracts MARC bibliographic records from ucladb for BSLW processing
 # Last revised: 20090725 akohler
 
-. /usr/local/bin/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 DB=ucladb
 BASEDIR=/m1/voyager/ucladb/local/bslw/bib_extract
@@ -18,7 +19,7 @@ RECORDS=BIB.MRC
 rm -f ${RECORDS}
 
 # Get list of record ids
-/usr/local/bin/vger_sqlplus_run ${SCHEMA} ${SQL}
+${VGER_SCRIPT}/vger_sqlplus_run ${SCHEMA} ${SQL}
 
 # 2008418 akohler: now using default UTF-8, not MARC-8
 # Export marc records in UTF-8 encoding, using the list of record ids
@@ -42,7 +43,7 @@ echo "Monthly bib record updates for tclu1 have been uploaded to ftp://${FTPSITE
 ) | ftp -i -v ${FTPSITE}
 
 # Capture stats about file
-COUNT=`/usr/local/bin/marcsplit -c ${RECORDS} | tr -d '\n' |  awk '{print $3}'`
+COUNT=`${BIN}/marcsplit -c ${RECORDS} | tr -d '\n' |  awk '{print $3}'`
 BYTES=`wc -c < ${RECORDS}`
 echo "${RECORDS}: ${COUNT} records, ${BYTES} bytes" >> ${EMAILLOG}
 cat ${EMAILLOG} | mailx -s "UCLA bib file uploaded" lit-libweb@library.ucla.edu

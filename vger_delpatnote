@@ -18,9 +18,8 @@ _show_usage() {
 ########################################
 # Main routine starts here
 
-# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Handle input parameters
 # input_file is required.

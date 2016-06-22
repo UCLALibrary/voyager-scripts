@@ -2,6 +2,9 @@
 
 # Retrieve files used to update Voyager patrons
 
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
 # Everything goes in here
 DIR=/m1/voyager/ucladb/local/patron
 
@@ -17,9 +20,8 @@ cd ${DIR}
 
 # Faculty and staff email addresses
 ## extra logic to handle server switch coming 20130223 drickard
-BIN=/usr/local/bin
 USER=ext_dir_ret9
-PWD=`${BIN}/get_value.pl ${BIN}/ais_credentials ${USER}`
+PWD=`${VGER_SCRIPT}/get_value.pl ${BIN}/ais_credentials ${USER}`
 (
   echo "user ${USER} ${PWD}"
   echo "ascii"
