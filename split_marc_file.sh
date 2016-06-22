@@ -17,7 +17,8 @@ else
   exit 1
 fi
 
-BIN=/usr/local/bin
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Split filename into basename and extension
 # Hoops needed for EXT since can't use basename command unless extension is known...

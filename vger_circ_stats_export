@@ -2,16 +2,15 @@
 
 ############################################################
 # Voyager Circulation Stats Export, called from 
-# /usr/local/bin/vger_circjobs.
+# ${VGER_SCRIPT}/vger_circjobs.
 #
 # This script exports and combines circulation data from 
 # Voyager. The files are meant to be imported to the 
 # Public Service Stats database.
 ############################################################
 
-
-# VGER_BASE
-. /usr/local/bin/vger_voyenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Each Voyager database has its own directory
 # Voyager and Oracle must be up
@@ -20,7 +19,7 @@ eliot|wells )
     SERVER=prod                 # production server
 
     # Run jobs for ucladb, but not for any other database
-    # /usr/local/bin/vger_daily will take care of rotating logs
+    # ${VGER_SCRIPT}/vger_daily will take care of rotating logs
     DIR=${VGER_BASE}/ucladb
     ;;
 butler|collins )
@@ -40,7 +39,7 @@ umask 007
 
 CIRCDIR=${DIR}/local/circ
 
-. /usr/local/bin/vger_ymd
+. ${VGER_SCRIPT}/vger_ymd
 
 STARTDATE=${LAST_YYYYMM}01
 ENDDATE=${THIS_YYYYMM}01
@@ -51,7 +50,7 @@ MERGE_TYPES="fees lost overdue_recall recall"
 FILE_TYPES="charges discharges overdue renewals cct"
 
 for TYPE in ${QUERY_TYPES}; do 
-  /usr/local/bin/vger_sqlplus_run vger_support ${CIRCDIR}/monthly_${TYPE} ${STARTDATE} ${ENDDATE}
+  ${VGER_SCRIPT}/vger_sqlplus_run vger_support ${CIRCDIR}/monthly_${TYPE} ${STARTDATE} ${ENDDATE}
 done
 
 for TYPE in ${SIMPLE_TYPES}; do

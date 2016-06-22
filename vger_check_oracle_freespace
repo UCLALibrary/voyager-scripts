@@ -1,8 +1,7 @@
 #!/bin/sh
 
-# For cron
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Meant to be called by userid oracle, with full login environment
 sqlplus -S '/ as sysdba' @${BIN}/vger_check_oracle_freespace.sql

@@ -9,8 +9,8 @@ _get_full_tablespaces() {
 # Nagios can't run script as oracle OS user, so can't use '/ as sysdba'
 # Get ucladb USERPASS credentials, which have necessary rights.
 . /m1/voyager/ucladb/ini/voyager.env
-# Get Oracle environment for VGER SID, needed for nagios OS user.
-. /usr/local/bin/vger_oraenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 sqlplus -S ${USERPASS} << EOQ
 -- Parameter from caller:

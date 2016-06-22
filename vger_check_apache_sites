@@ -1,9 +1,8 @@
 #!/bin/sh
 # Check list of apache sites for errors
 
-# Full environment for cron
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Arguments
 # File with list of sites: use if provided, else default

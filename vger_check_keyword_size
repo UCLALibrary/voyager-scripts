@@ -3,9 +3,8 @@
 # If ratio is above a threshold, a regen is needed
 # Last revised: 20080718 akohler
 
-# For cron, VGER_BASE
-. /usr/local/bin/vger_getenv
-
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 echo "\nChecking sizes of production keyword indexes:"
 # Check production databases
