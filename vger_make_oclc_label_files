@@ -24,7 +24,7 @@ fi
 
 for FILE in `ls DATA.* 2>/dev/null`; do
   LABELFILE=`echo ${FILE} | sed "s/DATA/LABEL/"`
-  COUNT=`/usr/local/bin/marcview ${FILE} | grep "^001" | wc -l | sed "s/ //g"`
+  COUNT=`${BIN}/marcview ${FILE} | grep "^001" | wc -l | sed "s/ //g"`
   echo "DAT  ${YYYYMMDD}000000.0" > ${LABELFILE}
   echo "RBF  ${COUNT}" >> ${LABELFILE}
   echo "DSN  ${FILE}" >> ${LABELFILE}

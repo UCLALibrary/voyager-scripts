@@ -4,8 +4,8 @@
 # Revised:
 # - 20080619 akohler: made port optional, for tracing non-listening programs like bulkimport
 
-# For RELEASE
-. /usr/local/bin/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 if [ -z $2 ]; then
   echo "Usage: $0 database appsvr [port]"
@@ -20,7 +20,7 @@ PORT=$3
 BASE=/m1/voyager/${DB}
 
 # Make sure files exist
-for FILE in ${BASE}/ini/voyager.env ${BASE}/ini/voyager.ini /m1/voyager/bin/${RELEASE}/${APPSVR} ; do
+for FILE in ${BASE}/ini/voyager.env ${BASE}/ini/voyager.ini ${VGER_BIN}/${APPSVR} ; do
   if [ ! -f ${FILE} ]; then
     echo "${FILE} not found - aborting"
     exit 1

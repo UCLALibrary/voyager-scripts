@@ -75,7 +75,6 @@ case $JOB in
     if [ ${DB} = ucladb -a ${SERVER} = production ]; then
         # Get USERPASS for sqlplus
         . ${DIR}/ini/voyager.env
-        # sqlplus path set above, via vger_getenv
         sqlplus -S $USERPASS @${VGER_SCRIPT}/vger_before_global_heading_change.sql
     fi
 
