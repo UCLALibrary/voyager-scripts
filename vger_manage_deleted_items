@@ -20,8 +20,8 @@ case ${DBLIST} in
   * ) _show_usage ;;
 esac
 
-# Get voyager environment
-. /usr/local/bin/vger_voyenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # One copy of control file, from which db-specific file is generated
 CTL=/m1/voyager/ucladb/local/cat/deleted_items.ctl
@@ -33,7 +33,7 @@ for DB in ${DBLIST}; do
 
   if [ -s ${FILE} ]; then
     mv ${FILE} ${FILE}.bak
-    /usr/local/bin/vger_sqlldr_load vger_subfields ${FILE}.bak ${TMPCTL}
+    ${VGER_SCRIPT}/vger_sqlldr_load vger_subfields ${FILE}.bak ${TMPCTL}
   fi # if -s ${FILE}
   # Clean up
   rm -f ${FILE}.bak ${TMPCTL}

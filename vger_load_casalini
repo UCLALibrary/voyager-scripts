@@ -3,9 +3,8 @@
 # Similar to vger_get_pia_marc_files and vger_load_gobi...
 # TODO: pull common logic (parsing credentials, retrieving files) into one script
 
-BIN=/usr/local/bin
-# Get full environment for cron
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 DIR=/m1/voyager/ucladb/local/eod/casalini
 cd ${DIR}
@@ -40,7 +39,7 @@ cat ${DIR}/casalini_credentials | \
     OLDLIST=${DIR}/${BASE}_previous.lst
 
     # Get files-only list via FTP
-    $BIN/curl -l -s ftp://${ACCOUNT}:${PASSWORD}@${SITE}/${FILEDIR} > ${NEWLIST}
+    curl -l -s ftp://${ACCOUNT}:${PASSWORD}@${SITE}/${FILEDIR} > ${NEWLIST}
 
     # Warn if previous list is empty or missing
     # Copy current to previous to resolve for next run
@@ -66,7 +65,7 @@ cat ${DIR}/casalini_credentials | \
       comm -13 ${OLDLIST} ${NEWLIST} | while read FILE; do
         echo Retrieving "${FILE}"...
         # Retrieve file with curl -s (--silent) -S (--show-error)
-        $BIN/curl -s -S ftp://${ACCOUNT}:${PASSWORD}@${SITE}/${FILEDIR}/"${FILE}" -o "${FILE}"
+        curl -s -S ftp://${ACCOUNT}:${PASSWORD}@${SITE}/${FILEDIR}/"${FILE}" -o "${FILE}"
         # Build one combined file for loading
         cat "${FILE}" >> ${ORDFILE}
         rm "${FILE}"
@@ -97,7 +96,7 @@ cat ${DIR}/casalini_credentials | \
       # Load all of the .mrc files in the directory
       for LOADFILE in ${BASEFILE}*.mrc; do
         echo "Loading ${LOADFILE}..."
-        ${BIN}/vger_bulkimport_file ${LOADFILE} ucladb CASALINI promptcat
+        ${VGER_SCRIPT}/vger_bulkimport_file ${LOADFILE} ucladb CASALINI promptcat
 
         # Rename log file
         LOGFILE=${LOADFILE}.log

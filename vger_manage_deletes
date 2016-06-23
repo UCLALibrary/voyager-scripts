@@ -26,9 +26,8 @@ case ${TYPELIST} in
   * ) _show_usage ;;
 esac
 
-# Get voyager environment
-BIN=/usr/local/bin
-. ${BIN}/vger_voyenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 for DB in ${DBLIST}; do
   for TYPE in ${TYPELIST}; do
@@ -40,7 +39,7 @@ for DB in ${DBLIST}; do
     if [ -s ${FILE} ]; then
       mv ${FILE} ${FILE}.bak
       # Split master file into monthly files
-      ${BIN}/vger_split_marc_deletefile.pl ${FILE}.bak ${TYPE}
+      ${VGER_SCRIPT}/vger_split_marc_deletefile.pl ${FILE}.bak ${TYPE}
 
       # Someone may have deleted record(s) during the split; if so, the newly-deleted
       #  records are in ${FILE} (which was just re-created by voyager)
@@ -69,7 +68,7 @@ for DB in ${DBLIST}; do
   done # TYPE
 
   # 20080610: manage deleted items
-  ${BIN}/vger_manage_deleted_items ${DB}
+  ${VGER_SCRIPT}/vger_manage_deleted_items ${DB}
 
 done # DB
 
@@ -80,9 +79,9 @@ while [ ! -z "$1" ]; do
 done
 
 # For LAST_YYYYMM
-. ${BIN}/vger_ymd
+. ${VGER_SCRIPT}/vger_ymd
 UCLA_BIB_DELFILE=${VGER_BASE}/ucladb/rpt/del_archive/deleted.bib.${LAST_YYYYMM}.mrc
 if [ -f ${UCLA_BIB_DELFILE} ]; then
-  ${BIN}/vger_load_deleted_subfields ${UCLA_BIB_DELFILE}
+  ${VGER_SCRIPT}/vger_load_deleted_subfields ${UCLA_BIB_DELFILE}
 fi
 

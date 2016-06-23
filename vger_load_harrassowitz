@@ -2,9 +2,8 @@
 # Retrieves and loads Harrassowitz records (brief bib/order records)
 # Intended to be run daily, to process previous day's file if present
 
-BIN=/usr/local/bin
-# Get full environment for cron
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Mandatory parameter: date in YYYYMMDD
 if [ -n "$1" ]; then
@@ -12,7 +11,7 @@ if [ -n "$1" ]; then
 else
   # No parameter, use yesterday's date
   DELTA=-1
-  . /usr/local/bin/vger_ymd_delta
+  . ${VGER_SCRIPT}/vger_ymd_delta
   DATE=${YEAR}${MONTH}${DAY}
 fi
 
@@ -26,7 +25,7 @@ cd ${DIR}
 # Get all files for given YYYYMMDD
 # Multiple HAR accounts - only one has these files - hardcoded for now
 USER=uclalib3
-PWD=`${BIN}/get_value.pl ${BIN}/harrassowitz_credentials ${USER}`
+PWD=`${VGER_SCRIPT}/get_value.pl ${BIN}/harrassowitz_credentials ${USER}`
 (
   echo "user ${USER} ${PWD}"
   echo "bin"
@@ -60,7 +59,7 @@ for ORDFILE in *.abc; do
 
         # Load the file into Voyager
         echo "Loading ${LOADFILE}..."
-        ${BIN}/vger_bulkimport_file ${LOADFILE} ucladb HAR promptcat
+        ${VGER_SCRIPT}/vger_bulkimport_file ${LOADFILE} ucladb HAR promptcat
 
 	#Reminder: LOADFILE = BASEFILE.mrc - both are used below
 

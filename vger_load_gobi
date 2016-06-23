@@ -2,9 +2,8 @@
 # Retrieves and loads YBP GOBI records (brief bib/order records)
 # Intended to be run daily, to process previous day's file if present
 
-BIN=/usr/local/bin
-# Get full environment for cron
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # The magic happens here
 DIR=/m1/voyager/ucladb/local/eod/gobi
@@ -15,13 +14,13 @@ FTPDIR=orders
 
 # Retrieve new files for all accounts
 for USER in UCLA uclacl; do
-  PASSWORD=`/usr/local/bin/get_value.pl ${DIR}/../config/ybp_credentials ${USER}`
+  PASSWORD=`${VGER_SCRIPT}/get_value.pl ${DIR}/../config/ybp_credentials ${USER}`
   NEWLIST=${DIR}/gobi_current_${USER}.lst
   OLDLIST=${DIR}/gobi_previous_${USER}.lst
 
   # Get current list of MARC files (*.ord) on FTP server; we don't care
   #  about textual *.cnt files, which have the number of records in corresponding *.ord files
-  $BIN/curl -s -l ftp://${USER}:${PASSWORD}@${SITE}/${FTPDIR}/ | grep "\.ord$" > ${NEWLIST}
+  curl -s -l ftp://${USER}:${PASSWORD}@${SITE}/${FTPDIR}/ | grep "\.ord$" > ${NEWLIST}
 
   # Bail out if OLDLIST doesn't have content
   if [ ! -s ${OLDLIST} ]; then
@@ -36,7 +35,7 @@ for USER in UCLA uclacl; do
     for FILE in `comm -13 ${OLDLIST} ${NEWLIST}`; do
       echo "Retrieving ${FILE}..."
       # Retrieve file with curl -s (--silent) -S (--show-error)
-      $BIN/curl -s -S ftp://${USER}:${PASSWORD}@${SITE}/${FTPDIR}/${FILE} -o ${FILE}
+      curl -s -S ftp://${USER}:${PASSWORD}@${SITE}/${FTPDIR}/${FILE} -o ${FILE}
     done
 
     # Replace the old list with the current one
@@ -112,7 +111,7 @@ for LOADFILE in *.mrc; do
 
     # Load the file into Voyager
     echo "Loading ${LOADFILE}..."
-    ${BIN}/vger_bulkimport_file ${LOADFILE} ucladb ${PROFILE} promptcat
+    ${VGER_SCRIPT}/vger_bulkimport_file ${LOADFILE} ucladb ${PROFILE} promptcat
 
     #Reminder: LOADFILE = BASEFILE.mrc - both are used below
 

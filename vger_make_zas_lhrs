@@ -3,9 +3,8 @@
 # WARNING: Don't run this the same day as vger_extract_zas, as they both upload to same directory
 #   on OCLC's FTP site, with (required) same file names based on date.
 
-# Get full voyager environment
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Everything happens here
 LHR=/m1/voyager/ucladb/local/lhr/zas
@@ -38,14 +37,14 @@ else
     shift
   done
 
-  . /usr/local/bin/vger_ymd_delta
+  . ${VGER_SCRIPT}/vger_ymd_delta
   LASTDATE=${YEAR}${MONTH}${DAY}
 fi
 
 echo "Extracting LHRs for records updated on/after ${LASTDATE}..."
 
 # Run query to get necessary data
-${BIN}/vger_sqlplus_run ucla_preaddb ${SQLFILE} ${LASTDATE}
+${VGER_SCRIPT}/vger_sqlplus_run ucla_preaddb ${SQLFILE} ${LASTDATE}
 
 # Exit if no data from query
 if [ ! -s ${DATAFILE} ]; then
@@ -71,11 +70,11 @@ ${BIN}/marcsplit -c zas_lhrs.mrc
 PROJECT=P013864
 YYMMDD=`date "+%y%m%d"`
 mv zas_lhrs.mrc DATA.D${YYMMDD}
-${BIN}/vger_make_oclc_label_files ${PROJECT} ZAS
+${VGER_SCRIPT}/vger_make_oclc_label_files ${PROJECT} ZAS
 
 # FTP the files to OCLC
 USER=tzas1
-PWD=`${BIN}/get_value.pl ${BIN}/oclc_credentials ${USER}`
+PWD=`${VGER_SCRIPT}/get_value.pl ${BIN}/oclc_credentials ${USER}`
 (
   echo "user ${USER} ${PWD}"
   echo "cd 'edx.ebsb.zas.ftp'"

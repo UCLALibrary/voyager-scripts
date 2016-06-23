@@ -7,10 +7,13 @@ else
   exit 1
 fi
 
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
 TMPFILE=/tmp/vmc.$$
 
 for FILE in `ls -1 $FILES`; do
-  /usr/local/bin/marcview $FILE > $TMPFILE
+  ${BIN}/marcview $FILE > $TMPFILE
   TOTCNT=`grep "^001" $TMPFILE | wc -l`
   HOLCNT=`grep "^004" $TMPFILE | wc -l`
   BIBCNT=`expr $TOTCNT - $HOLCNT`

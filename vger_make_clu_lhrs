@@ -4,15 +4,14 @@
 # Intended to run weekly via cron, generating records added/edited
 #  since Monday of the previous week, but can use any date via command line.
 
-# Environment for running via cron: need both voyager and oracle
-. /usr/local/bin/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
-BIN=/usr/local/bin
 BASE=/m1/voyager/ucladb
 DIR=${BASE}/local/lhr/clu
 BASEFILE=extract_lhr
 SCHEMA=vger_report
-PASSWORD=`${BIN}/get_value.pl ${BIN}/vger_db_credentials ${SCHEMA}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${BIN}/vger_db_credentials ${SCHEMA}`
 
 cd ${DIR}
 
@@ -37,14 +36,14 @@ else
     shift
   done
 
-  . /usr/local/bin/vger_ymd_delta
+  . ${VGER_SCRIPT}/vger_ymd_delta
   LASTDATE=${YEAR}${MONTH}${DAY}
 fi
 
 echo "Extracting LHRs for records updated on/after ${LASTDATE}..."
 
 # Create table with data for later queries
-${BIN}/vger_sqlplus_run ${SCHEMA} ${DIR}/create_lhr_table ${LASTDATE}
+${VGER_SCRIPT}/vger_sqlplus_run ${SCHEMA} ${DIR}/create_lhr_table ${LASTDATE}
 
 for TYPE in bibs hols; do
   BASETYPE=${BASEFILE}_${TYPE}
@@ -61,7 +60,7 @@ for TYPE in bibs hols; do
   esac
  
   # Get Voyager ids and OCLC numbers from main query
-  ${BIN}/vger_sqlplus_run ${SCHEMA} ${DIR}/${SQLFILE}
+  ${VGER_SCRIPT}/vger_sqlplus_run ${SCHEMA} ${DIR}/${SQLFILE}
 
   # Extract Voyager records in UTF-8
   # Pmarcexport ignores data after tab, so no need to pull just Voyager ids into own file first 
@@ -82,7 +81,7 @@ ${BIN}/marcsplit -c lhrs_physical.mrc
 PROJECT=P011764
 YYMMDD=`date "+%y%m%d"`
 cat lhrs_internet.mrc lhrs_physical.mrc > DATA.D${YYMMDD}
-${BIN}/vger_make_oclc_label_files ${PROJECT}
+${VGER_SCRIPT}/vger_make_oclc_label_files ${PROJECT}
 
 # FTP the files to OCLC
 (

@@ -10,15 +10,14 @@ fi
 # Clear input parameters so they don't conflict with .profile later
 set --
 
-# Get full voyager & oracle environment for cron
-BIN=/usr/local/bin
-. /export/home/voyager/.profile
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Mandatory parameter: date in YYMMDD
 if [ ! -n "$DATE" ]; then
   # No parameter, use yesterday's date
   DELTA=-1
-  . ${BIN}/vger_ymd_delta
+  . ${VGER_SCRIPT}/vger_ymd_delta
   DATE=`echo ${YEAR}${MONTH}${DAY} | cut -c3-8`
 fi
 
@@ -84,7 +83,7 @@ echo ""
 # * Combine multiple 049 fields into one
 # * Add custom acquisitions info from db
 SCHEMA=vger_support
-PWD=`${BIN}/get_value.pl ${BIN}/vger_db_credentials $SCHEMA`
+PWD=`${VGER_SCRIPT}/get_value.pl ${BIN}/vger_db_credentials $SCHEMA`
 for FILE in Y*.mrc; do 
   if [ -f ${FILE} ]; then
     echo "Adding acq info to ${FILE}..."
@@ -120,7 +119,7 @@ done
 for FILE in Y*_APPR*.mrc; do
   if [ -f ${FILE} ]; then
     echo "Splitting ${FILE} into smaller chunks..."
-    ${BIN}/split_marc_file.sh ${FILE} 60
+    ${VGER_SCRIPT}/split_marc_file.sh ${FILE} 60
     rm ${FILE} # no longer needed after new split file(s) created
   fi
 done
@@ -132,7 +131,7 @@ USER=promptcat
 for LOADFILE in Y*_APPR*.mrc; do
   if [ -s ${LOADFILE} ]; then
     echo "Loading ${LOADFILE}..."
-    ${BIN}/vger_bulkimport_file ${LOADFILE} ${DB} ${PROFILE} ${USER}
+    ${VGER_SCRIPT}/vger_bulkimport_file ${LOADFILE} ${DB} ${PROFILE} ${USER}
     BASENAME=`basename ${LOADFILE} .mrc`
 
     # Should always be a log file; rename it
