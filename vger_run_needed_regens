@@ -23,9 +23,8 @@ _get_ratio() {
 #####################
 # Main script starts here
 
-# For cron, VGER_BASE
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 echo "\nChecking sizes of production keyword indexes:"
 # Check production databases
@@ -60,7 +59,7 @@ for DB in ethnodb filmntvdb ucladb; do
     if [ ${RATIO} -gt ${THRESHOLD} ]; then
       echo "\tRunning regen for ${DB} ${TYPE}..."
       echo "\tStart: `date`"
-      ${BIN}/${REGEN_SCRIPT} ${DB} ${TYPE}
+      ${VGER_SCRIPT}/${REGEN_SCRIPT} ${DB} ${TYPE}
       echo "\tEnd  : `date`"
     fi
   done # for TYPE

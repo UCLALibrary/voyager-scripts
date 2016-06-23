@@ -3,13 +3,12 @@
 #
 # Created: 20071205 akohler
 
-# Include environment for cron
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 DIR=/m1/voyager/ucladb/local/cat
-#${BIN}/vger_sqlplus_run vger_report ${DIR}/create_948_archive
-${BIN}/vger_sqlplus_run vger_report ${DIR}/update_948_archive
+#${VGER_SCRIPT}/vger_sqlplus_run vger_report ${DIR}/create_948_archive
+${VGER_SCRIPT}/vger_sqlplus_run vger_report ${DIR}/update_948_archive
 if [ -s ${DIR}/update_948_archive.out ]; then
   cat ${DIR}/update_948_archive.out
 fi

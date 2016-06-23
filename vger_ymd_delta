@@ -16,9 +16,12 @@ then
     DELTA=0
 fi
 
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
 # Set $YEAR, $MONTH and $DAY from current date or $1, $2 and $3
 # Set $LAST_YYYYMM, $THIS_YYYYMM and $NEXT_YYYYMM from $YEAR and $MONTH
-. /usr/local/bin/vger_ymd
+. ${VGER_SCRIPT}/vger_ymd
 #echo $YEAR $MONTH $DAY $DELTA
 
 DAY=`expr $DAY + $DELTA`

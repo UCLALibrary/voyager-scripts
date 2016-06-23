@@ -24,15 +24,14 @@ _show_usage() {
 ########################################
 # Main routine starts here
 
-# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Handle input parameters
 # schema is required.
 if [ -n "$1" ]; then
   SCHEMA=$1
-  PASSWORD=`/usr/local/bin/get_value.pl /usr/local/bin/vger_db_credentials $SCHEMA`
+  PASSWORD=`${VGER_SCRIPT}/get_value.pl ${BIN}/vger_db_credentials $SCHEMA`
 else
   _show_usage
   exit
