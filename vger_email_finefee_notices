@@ -3,11 +3,14 @@
 # Uses custom java program to build and send email fee/fine notices
 # Last revised: 2006-06-06 akohler
 
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
 # Setup
 DIR=/m1/voyager/ucladb/rpt
 # changed to use actual latest java executable drickard 20100709
 #JAVA=/usr/jdk/latest/bin/java
-JAVA=/usr/local/bin/java
+JAVA=${BIN}/java
 JAVADIR=/usr/local/java
 CLASSPATH=${JAVADIR}/vobj.jar:${JAVADIR}/mail.jar:${JAVADIR}/activation.jar:${JAVADIR}/feefinesender.jar
 PROGRAM=edu.ucla.library.libservices.voyager.FeeFineSender

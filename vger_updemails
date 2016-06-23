@@ -57,7 +57,7 @@ fi
 
 # changed to use actual latest java executable drickard 20100709
 #JAVA=/usr/jdk/latest/bin/java
-JAVA=/usr/local/bin/java
+JAVA=${BIN}/java
 CLASSPATH=/usr/local/java
 
 ${JAVA} -jar ${CLASSPATH}/updemails.jar ${PROPS_FILE} ${ERROR_FILE}
