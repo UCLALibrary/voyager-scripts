@@ -56,7 +56,7 @@ cp ${BASE}/ini/voyager.ini ${INI}
 # Run APPSVR with custom INI file on specific PORT (if supplied)
 # Below variables not defined in this script come from ENV
 # Ex Libris uses exec in their scripts (like Pcatsvr); not wanted here since script would end after exec finishes
-CMD="${VOYAGER_BIN}/${APPSVR} -d ${ORACLE_SID} -u ${USERPASS} -c ${INI}"
+CMD="${VGER_BIN}/${APPSVR} -d ${ORACLE_SID} -u ${USERPASS} -c ${INI}"
 if [ ! -z ${PORT} ]; then
   CMD="${CMD} -P ${PORT}"
 fi
