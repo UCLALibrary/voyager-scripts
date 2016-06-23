@@ -96,7 +96,7 @@ fi
 
 # Other general settings
 SCHEMA=vger_subfields
-PWD=`${VGER_SCRIPT}/get_value.pl ${BIN}/vger_db_credentials ${SCHEMA}`
+PWD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/vger_db_credentials ${SCHEMA}`
 OUTDIR=/tmp
 
 # Loop through databases and types

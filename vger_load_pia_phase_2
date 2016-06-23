@@ -6,7 +6,7 @@
 DB=ucladb
 BASE=${VGER_BASE}/${DB}
 SCHEMA=vger_support
-PASSWORD=`${VGER_SCRIPT}/get_value.pl ${BIN}/vger_db_credentials ${SCHEMA}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/vger_db_credentials ${SCHEMA}`
 
 # Everything happens here
 DIR=${BASE}/local/pia

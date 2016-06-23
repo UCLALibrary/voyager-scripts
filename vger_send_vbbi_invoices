@@ -8,7 +8,7 @@ DIR=/m1/voyager/ucladb/local/vbbi
 cd ${DIR}
 
 USER=bb_library
-PWD=`${VGER_SCRIPT}/get_value.pl ${BIN}/ais_credentials ${USER}`
+PWD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/ais_credentials ${USER}`
 DATE=`date "+%Y%m%d"` #YYYYMMDD
 PACNAME=LIBRY-APINTRFC
 LIBNAME=${PACNAME}.${DATE}

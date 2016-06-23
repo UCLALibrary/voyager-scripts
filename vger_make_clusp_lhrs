@@ -76,7 +76,7 @@ ${VGER_SCRIPT}/vger_make_oclc_label_files ${PROJECT} CLUSP
 
 # FTP the files to OCLC
 USER=tclusp1
-PWD=`${VGER_SCRIPT}/get_value.pl ${BIN}/oclc_credentials ${USER}`
+PWD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
 (
   echo "user ${USER} ${PWD}"
   echo "cd 'edx.ebsb.clusp.ftp'"

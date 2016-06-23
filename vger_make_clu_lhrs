@@ -11,7 +11,7 @@ BASE=/m1/voyager/ucladb
 DIR=${BASE}/local/lhr/clu
 BASEFILE=extract_lhr
 SCHEMA=vger_report
-PASSWORD=`${VGER_SCRIPT}/get_value.pl ${BIN}/vger_db_credentials ${SCHEMA}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/vger_db_credentials ${SCHEMA}`
 
 cd ${DIR}
 

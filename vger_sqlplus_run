@@ -27,7 +27,7 @@ _show_usage() {
 # schema is required.
 if [ -n "$1" ]; then
   SCHEMA=$1
-  PASSWORD=`${VGER_SCRIPT}/get_value.pl ${BIN}/vger_db_credentials $SCHEMA`
+  PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/vger_db_credentials $SCHEMA`
   if [ "$PASSWORD" = "" ]; then
     case $SCHEMA in
       ethnodb|filmntvdb|ucladb) 
