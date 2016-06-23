@@ -11,7 +11,7 @@ DIR=/m1/voyager/ucladb/rpt
 # changed to use actual latest java executable drickard 20100709
 #JAVA=/usr/jdk/latest/bin/java
 JAVA=${BIN}/java
-JAVADIR=/usr/local/java
+JAVADIR=/usr/local/bin/voyager/java
 PROGRAM=${JAVADIR}/circmail.jar
 PROPERTIES_FILE=${JAVADIR}/notices.properties
 VERBOSE=true
