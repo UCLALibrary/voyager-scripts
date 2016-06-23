@@ -87,7 +87,7 @@ ${VGER_SCRIPT}/vger_patron_update sif_daily_changes.out
 ${VGER_SCRIPT}/vger_sqlplus_run vger_support /m1/voyager/ucladb/local/patron/patron_sif_processed
 
 # 20100216 drickard: Update patron email addresses to eliminate any expiration dates
-${VGER_SCRIPT}/vger_updemails /usr/local/bin/voyager/java/voyager.properties /m1/voyager/ucladb/local/patron/vger_updemails_errors.txt
+${VGER_SCRIPT}/vger_updemails ${VGER_JAVA}/voyager.properties /m1/voyager/ucladb/local/patron/vger_updemails_errors.txt
 
 # 20120508 drickard: Execute Voyager patron purge job (actually executes on quarter--1 Jan/Apr/Jul/Oct
 # 20150916 drickard: suspending patron purge per VBT-387

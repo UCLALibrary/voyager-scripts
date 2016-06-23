@@ -60,7 +60,7 @@ SERVER=`hostname`.library.ucla.edu
 # changed to use actual latest java executable drickard 20100709
 #JAVA=/usr/jdk/latest/bin/java
 JAVA=${BIN}/java
-JCH=/usr/local/bin/voyager/java
+JCH=${VGER_JAVA}
 CLASSPATH=$JCH/vapi-core.jar:$JCH/vapi-client.jar:$JCH/commons-cli-1.0.jar:$JCH/delpatnote.jar
 PROPERTIES_FILE=$JCH/voyager.properties
 

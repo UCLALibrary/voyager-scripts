@@ -11,7 +11,7 @@ DIR=/m1/voyager/ucladb/rpt
 # changed to use actual latest java executable drickard 20100709
 #JAVA=/usr/jdk/latest/bin/java
 JAVA=${BIN}/java
-JAVADIR=/usr/local/bin/voyager/java
+JAVADIR=${VGER_JAVA}
 CLASSPATH=${JAVADIR}/vobj.jar:${JAVADIR}/mail.jar:${JAVADIR}/activation.jar:${JAVADIR}/feefinesender.jar
 PROGRAM=edu.ucla.library.libservices.voyager.FeeFineSender
 PROPERTIES_FILE=${JAVADIR}/voyager.properties
