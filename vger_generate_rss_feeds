@@ -50,7 +50,7 @@ fi
 # Temporary override until/unless manifests are rebuilt:
 #$JAVA -jar $DATAJARFILE $PROPSFILE
 #$JAVA -jar $JARFILE $PROPSFILE
-J=/usr/local/java
+J=/usr/local/bin/voyager/java
 CLASSPATH=$J/spring.jar:$J/oracle.jar:$J/commons.jar:$J/jdom.jar:$J/rome-0.8.jar
 
 $JAVA -cp $CLASSPATH:$DATAJARFILE edu.ucla.library.libservices.beans.FeedDataBuilder $PROPSFILE
