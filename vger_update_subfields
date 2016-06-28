@@ -35,7 +35,7 @@ _create_ctl_file() {
     echo ", subfield_seq"
     echo ", indicators"
     echo ", tag"
-    echo ", subfield CHAR(9999)"
+    echo ", subfield CHAR(9999) \"substr(:subfield, 1, 2000)\""
     echo ")"
   ) > ${CTLFILE}
 }
