@@ -23,7 +23,7 @@ JARFILE=${SUPPORTDIR}/rss-feeds.jar
 # Properties file describes which directories hold the .xml files
 PROPSFILE=${SUPPORTDIR}/rss.properties
 #output directory used below for archiving one feed
-OUTPUTDIR=/usr/local/www/rss/feeds
+OUTPUTDIR=/m1/voyager/ucladb/local/rss/feeds
 #date in YYYYMMDD format for archiving all_law feed
 DELTA=-1
 . ${VGER_SCRIPT}/vger_ymd_delta
