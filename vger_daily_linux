@@ -4,28 +4,28 @@
 # Must run as root, for backup; uses su to run other scripts as
 # voyager or oracle.
 
-# Testing
-
 # Get voyager environment, for vars and for cron
 . /home/voyager/.profile.local
 
-# Shut down apache, voyager and oracle
+echo `date`: Shut down apache, voyager and oracle
 /etc/init.d/httpd2 stop
 /etc/init.d/voyager stop
 /etc/init.d/dbora stop
 
-echo Starting vger_snap_backup `date`
+echo `date`: Starting vger_snap_backup
 ${VGER_SCRIPT}/vger_snap_backup
-echo Finished vger_snap_backup `date`
+echo `date`: Finished vger_snap_backup
 
-# Start oracle, voyager and apache
+echo `date`: Start oracle, voyager and apache
 /etc/init.d/dbora start
 /etc/init.d/voyager start
 /etc/init.d/httpd2 start
 
-echo Voyager environment:
-su - voyager -c "${VGER_SCRIPT}/env_test" 2>&1
+echo `date`: Running Acquisitions jobs...
+#####su - voyager -c "${VGER_SCRIPT}/vger_acqjobs
 
-echo Oracle environment:
-su - oracle -c "${VGER_SCRIPT}/env_test" 2>&1
+echo `date`: Running Circulation jobs...
+su - voyager -c "${VGER_SCRIPT}/vger_circjobs
+
+echo `date`: All done
 
