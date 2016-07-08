@@ -25,7 +25,7 @@ echo `date`: Running Acquisitions jobs...
 #####su - voyager -c "${VGER_SCRIPT}/vger_acqjobs
 
 echo `date`: Running Circulation jobs...
-su - voyager -c "${VGER_SCRIPT}/vger_circjobs
+su - voyager -c "${VGER_SCRIPT}/vger_circjobs"
 
 echo `date`: All done
 
