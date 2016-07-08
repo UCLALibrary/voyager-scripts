@@ -16,10 +16,10 @@ _Usage () {
 # Script names begin with T for training and P for production
 # Voyager and Oracle must be up
 case `hostname` in
-eliot|wells )
+p-w-voyager01|wells )
     SERVER=production			# production server
     ;;
-butler|collins )
+p-w-voyager01|collins )
     SERVER=test				# test server
     ;;
 * )

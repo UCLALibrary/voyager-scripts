@@ -38,7 +38,7 @@
 # Each Voyager database has its own directory
 # Voyager and Oracle must be up
 case `hostname` in
-eliot|wells )
+wells|p-w-voyager01 )
     SERVER=prod                 # production server
 
     # Run jobs for ucladb, but not for any other database

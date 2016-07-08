@@ -10,14 +10,14 @@
 # Script names begin with T for training and P for production
 # Voyager and Oracle must be up
 case `hostname` in
-eliot|wells )
+p-w-voyager01|wells )
     SERVER=prod			# production server
 
     # Run jobs for ucladb, but not for any other database
     # ${VGER_SCRIPT}/vger_daily will take care of rotating logs
     DIR=$VGER_BASE/ucladb
     ;;
-butler|collins )
+t-w-voyager01|collins )
     SERVER=test			# test server
 
     echo "$0: this script can run only on the production server"
