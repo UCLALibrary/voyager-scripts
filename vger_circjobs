@@ -9,7 +9,7 @@
 # Script names begin with T for training and P for production
 # Voyager and Oracle must be up
 case `hostname` in
-eliot|wells )
+wells|p-w-voyager01 )
     SERVER=prod			# production server
 
     # Run jobs for ucladb, but not for any other database
@@ -57,7 +57,7 @@ done
 # Run the process that sends student fines to BAR
 # and updates in Voyager which of those fines have
 # been paid or credited.
-${VGER_SCRIPT}/vger_bar
+#${VGER_SCRIPT}/vger_bar
 
 # Run various other Voyager circ jobs
 for JOB in 3 4 5 6 7 8 24
