@@ -134,7 +134,7 @@ then
   # For non-holiday weekdays upload the batch file to BAR.
   #
   echo "It's a non-holiday weekday so uploading the file to BAR."
-  $DIR/bin/upload_bar_file
+  #$DIR/bin/upload_bar_file
 else
   #
   # For holidays and weekends do not upload the batch file to BAR.
