@@ -59,7 +59,6 @@ ${VGER_SCRIPT}/vger_send_edi_orders 2>&1 | mailx -s "EDI files sent" \
 
 # Retrieve EOD (order) files from various vendors
 ${VGER_SCRIPT}/vger_load_gobi
-# 20160528: CAS and HAR disabled for fiscal close
-#${VGER_SCRIPT}/vger_load_harrassowitz
-#${VGER_SCRIPT}/vger_load_casalini
+${VGER_SCRIPT}/vger_load_harrassowitz
+${VGER_SCRIPT}/vger_load_casalini
 
