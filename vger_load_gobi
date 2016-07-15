@@ -89,7 +89,7 @@ for LOADFILE in *.mrc; do
       # Account 06 is ILL for Biomed
       06*)
         PROFILE=GOBILLBI
-        CONTACTS="aaa@library.ucla.edu bobfreel@library.ucla.edu cmedina@library.ucla.edu lit-libweb@library.ucla.edu"
+        CONTACTS="aaa@library.ucla.edu cmedina@library.ucla.edu lit-libweb@library.ucla.edu"
         ;;
       # Account 09 is e-books, managed by Roxanne Peck
       09*)
