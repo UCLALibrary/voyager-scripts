@@ -83,12 +83,12 @@ echo ""
 # * Combine multiple 049 fields into one
 # * Add custom acquisitions info from db
 SCHEMA=vger_support
-PWD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/vger_db_credentials $SCHEMA`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/vger_db_credentials $SCHEMA`
 for FILE in Y*.mrc; do 
   if [ -f ${FILE} ]; then
     echo "Adding acq info to ${FILE}..."
     mv ${FILE} ${FILE}.bak
-    ${SCRIPTS}/prep_ybp.pl ${FILE}.bak ${FILE} ${SCHEMA} ${PWD}
+    ${SCRIPTS}/prep_ybp.pl ${FILE}.bak ${FILE} ${SCHEMA} ${PASSWORD}
     if [ ! -s ${FILE} ]; then
       echo "ERROR creating ${FILE} - exiting"
       exit 1

@@ -25,9 +25,9 @@ cd ${DIR}
 # Get all files for given YYYYMMDD
 # Multiple HAR accounts - only one has these files - hardcoded for now
 USER=uclalib3
-PWD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/harrassowitz_credentials ${USER}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/harrassowitz_credentials ${USER}`
 (
-  echo "user ${USER} ${PWD}"
+  echo "user ${USER} ${PASSWORD}"
   echo "bin"
   echo "mget ${DATE}*"
   echo "quit"

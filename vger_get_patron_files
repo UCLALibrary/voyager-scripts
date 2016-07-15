@@ -21,9 +21,9 @@ cd ${DIR}
 # Faculty and staff email addresses
 ## extra logic to handle server switch coming 20130223 drickard
 USER=ext_dir_ret9
-PWD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/ais_credentials ${USER}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/ais_credentials ${USER}`
 (
-  echo "user ${USER} ${PWD}"
+  echo "user ${USER} ${PASSWORD}"
   echo "ascii"
 # remove following line--get direct access to file directory
 #  echo "cd /private/dir-ret9"

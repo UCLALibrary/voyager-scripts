@@ -22,7 +22,7 @@ _show_usage() {
 _get_max_id() {
   SQLFILE=max${TYPE}.sql
   echo "select 'MAXID=', max(${TYPE}_id) from ${DB}.${TYPE}_master;" > ${SQLFILE}
-  MAXID=`sqlplus ${SCHEMA}/${PWD} < ${SQLFILE} | grep "MAXID=" | awk '{print $2}'`
+  MAXID=`sqlplus ${SCHEMA}/${PASSWORD} < ${SQLFILE} | grep "MAXID=" | awk '{print $2}'`
   rm ${SQLFILE}
 }
 
@@ -46,7 +46,7 @@ case ${TYPE} in
 esac
 
 SCHEMA=vger_subfields
-PWD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/vger_db_credentials ${SCHEMA}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/vger_db_credentials ${SCHEMA}`
 REBUILDTABLE=Y
 TABLE=${DB}_${TYPE}_subfield
 BASE=/m1/voyager/${DB}
@@ -90,7 +90,7 @@ if [ "${REBUILDTABLE}" = "Y" ]; then
     echo "GRANT SELECT ON ${TABLE} TO ucladb, ucla_preaddb, vger_support, vger_report WITH GRANT OPTION;"
     echo "QUIT;"
   ) > ${SQLFILE}
-  sqlplus -S ${SCHEMA}/${PWD} @${SQLFILE}
+  sqlplus -S ${SCHEMA}/${PASSWORD} @${SQLFILE}
   rm ${SQLFILE}
 fi
 
@@ -145,7 +145,7 @@ while [ ${START} -le ${MAXID} ]; do
 
   # Load data into Oracle database, in vger_subfields schema & tablespace
   echo "\n`date` Loading parsed subfields into Oracle..."
-  sqlldr userid=${SCHEMA}/${PWD} control=${CTLFILE} direct=TRUE \
+  sqlldr userid=${SCHEMA}/${PASSWORD} control=${CTLFILE} direct=TRUE \
     data=${SUBFIELDFILE} \
     bad=${SUBFIELDFILE}.bad \
     log=${SUBFIELDFILE}.log
@@ -180,7 +180,7 @@ SQLFILE=${TABLE}.$$.sql
   echo "QUIT;"
 ) > ${SQLFILE}
 
-sqlplus -S ${SCHEMA}/${PWD} @${SQLFILE}
+sqlplus -S ${SCHEMA}/${PASSWORD} @${SQLFILE}
 rm ${SQLFILE}
 
 rm ${CTLFILE}

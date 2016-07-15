@@ -74,9 +74,9 @@ ${VGER_SCRIPT}/vger_make_oclc_label_files ${PROJECT} ${SYMBOL}
 
 # FTP the files to OCLC
 USER=tzas1
-PWD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
 (
-  echo "user ${USER} ${PWD}"
+  echo "user ${USER} ${PASSWORD}"
   echo "cd 'edx.ebsb.zas.ftp'"
   echo "bin"
   echo "mput DATA*"

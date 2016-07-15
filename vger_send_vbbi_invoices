@@ -8,7 +8,7 @@ DIR=/m1/voyager/ucladb/local/vbbi
 cd ${DIR}
 
 USER=bb_library
-PWD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/ais_credentials ${USER}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/ais_credentials ${USER}`
 DATE=`date "+%Y%m%d"` #YYYYMMDD
 PACNAME=LIBRY-APINTRFC
 LIBNAME=${PACNAME}.${DATE}
@@ -24,7 +24,7 @@ if [ -s ${OUTFILE} ]; then
   echo Invoices: `grep "^Z25" ${LIBNAME} | wc -l`
   echo Errors  : `egrep -v "^Z20|^Z21|^Z25|^Z41" ${LIBNAME} | wc -l`
   (
-    echo "user ${USER} ${PWD}"
+    echo "user ${USER} ${PASSWORD}"
     echo "put ${LIBNAME} ${PACNAME}"
     echo "dir"
     echo "quit"

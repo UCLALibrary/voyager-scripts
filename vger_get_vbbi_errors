@@ -8,12 +8,12 @@ DIR=/m1/voyager/ucladb/local/vbbi
 cd ${DIR}
 
 USER=bb_library
-PWD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/ais_credentials ${USER}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/ais_credentials ${USER}`
 DATE=`date "+%Y%m%d"` #YYYYMMDD
 PACNAME=BATCH-AP-LIBRY-ERR
 LIBNAME=${PACNAME}.${DATE}
 (
-  echo "user ${USER} ${PWD}"
+  echo "user ${USER} ${PASSWORD}"
   echo "get ${PACNAME} ${LIBNAME}"
   echo "quit"
 ) | ftp -n -v fx.it.ucla.edu

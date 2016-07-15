@@ -96,7 +96,7 @@ fi
 
 # Other general settings
 SCHEMA=vger_subfields
-PWD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/vger_db_credentials ${SCHEMA}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/vger_db_credentials ${SCHEMA}`
 OUTDIR=/tmp
 
 # Loop through databases and types
@@ -148,7 +148,7 @@ for DB in ${DBLIST}; do
     done
     echo "QUIT;" >> ${IDSQLFILE}
     # Run the SQL script to delete records
-    sqlplus -S ${SCHEMA}/${PWD} < ${IDSQLFILE}
+    sqlplus -S ${SCHEMA}/${PASSWORD} < ${IDSQLFILE}
     rm -f ${IDFILE} ${IDSQLFILE}
 
     # Parse marc file into subfields
@@ -163,7 +163,7 @@ for DB in ${DBLIST}; do
     echo "\n`date` Loading parsed subfields into Oracle..."
     # Create control file for sqlldr, as CTLFILE
     _create_ctl_file
-    sqlldr userid=${SCHEMA}/${PWD} control=${CTLFILE} direct=FALSE \
+    sqlldr userid=${SCHEMA}/${PASSWORD} control=${CTLFILE} direct=FALSE \
       silent=\(HEADER, FEEDBACK\) \
       bindsize=512000 \
       rows=100 \
