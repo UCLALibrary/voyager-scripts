@@ -21,11 +21,11 @@ echo `date`: Start oracle, voyager and apache
 /etc/init.d/voyager start
 /etc/init.d/httpd2 start
 
-echo `date`: Running Acquisitions jobs...
-su - voyager -c "${VGER_SCRIPT}/vger_acqjobs"
-
 echo `date`: Running Circulation jobs...
 su - voyager -c "${VGER_SCRIPT}/vger_circjobs"
+
+echo `date`: Running Acquisitions jobs...
+su - voyager -c "${VGER_SCRIPT}/vger_acqjobs"
 
 echo `date`: All done
 
