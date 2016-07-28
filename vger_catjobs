@@ -82,7 +82,7 @@ case $JOB in
     $DIR/sbin/Pcatjob -j${JOB} -Llissystem 2>&1 | mailx -s "GHC step 3 cron - ${SERVER} - ${DB}" lit-libweb@library.ucla.edu
 
     # Send the whole log to the catalogers
-    cat $DIR/rpt/catjob.log | mailx -s "GHC step 3 - ${SERVER} - ${DB}" ${MAILTO}
+    cat $DIR/rpt/catjob.log | ${VGER_SCRIPT}/vger_clean_for_email | mailx -s "GHC step 3 - ${SERVER} - ${DB}" ${MAILTO}
     ;;
 * )
     _Usage
