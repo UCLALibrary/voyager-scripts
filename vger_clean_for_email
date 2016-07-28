@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# UCLA Exchange server converts some "text" messages sent by
+# Voyager server into "binary" attachments, making them hard
+# to read.
+# This script reads from stdin, keeps only the desired printable
+# characters, and writes to stdout.
+# Use it like any utility, piping input through it for output to mailx etc.
+
+# Read from file if filename provided as $1, else read from stdin
+# Thanks to http://superuser.com/questions/747884/how-to-write-a-script-that-accepts-input-from-a-file-or-from-stdin
+[ $# -ge 1 -a -f "$1" ] && input="$1" || input="-"
+
+# Strip out everything except the values below (in OCTAL)
+# octal 11 = 0x09, TAB
+# octal 12 = 0x0A, LineFeed
+# octal 40-176 = 0x20 through 0x7E, basic printable ASCII
+
+cat "$input" | tr -cd '\11\12\40-\176'
+
