@@ -1,16 +1,15 @@
 #!/bin/sh
 
-BIN=/usr/local/bin
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
 DIR=/m1/voyager/ucladb/local/system
 SCRIPT=vger_log_oracle_sessions
-
-# For cron
-. ${BIN}/vger_getenv
 
 # Only if Oracle is running
 PS=`ps -u oracle -o args | grep pmon | grep -v grep`
 if [ -n "${PS}" ]; then
-  ${BIN}/vger_sqlplus_run vger_support ${DIR}/${SCRIPT}
+  ${VGER_SCRIPT}/vger_sqlplus_run vger_support ${DIR}/${SCRIPT}
   if [ ! -s ${DIR}/${SCRIPT}.out ]; then
     rm ${DIR}/${SCRIPT}.out
   fi

@@ -43,9 +43,8 @@ _create_ctl_file() {
 ########################################
 # Main routine starts here
 
-# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Handle input parameters
 # Database is required; check user input, default to all databases if user doesn't specify
@@ -91,13 +90,13 @@ else
   done
 
   # Set YEAR, MONTH, DAY based on DELTA
-  . ${BIN}/vger_ymd_delta
+  . ${VGER_SCRIPT}/vger_ymd_delta
   STARTDATE=${YEAR}${MONTH}${DAY}
 fi
 
 # Other general settings
 SCHEMA=vger_subfields
-PWD=`${BIN}/get_value.pl ${BIN}/vger_db_credentials ${SCHEMA}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/vger_db_credentials ${SCHEMA}`
 OUTDIR=/tmp
 
 # Loop through databases and types
@@ -137,8 +136,8 @@ for DB in ${DBLIST}; do
     rm -f ${IDFILE} ${IDSQLFILE}
 
     # Get the record ids from the 001 fields
-    ${BIN}/vger_get_marc_ids_by_date.pl ${DELFILE} ${STARTDATE} ${ENDDATE} > ${IDFILE}
-    ${BIN}/vger_get_marc_ids_by_date.pl ${MARCFILE} ${STARTDATE} ${ENDDATE} >> ${IDFILE}
+    ${VGER_SCRIPT}/vger_get_marc_ids_by_date.pl ${DELFILE} ${STARTDATE} ${ENDDATE} > ${IDFILE}
+    ${VGER_SCRIPT}/vger_get_marc_ids_by_date.pl ${MARCFILE} ${STARTDATE} ${ENDDATE} >> ${IDFILE}
 #    ${BIN}/marcview ${DELFILE} | grep "^001" | cut -d":" -f2 > ${IDFILE}
 #    ${BIN}/marcview ${MARCFILE} | grep "^001" | cut -d":" -f2 >> ${IDFILE}
 
@@ -149,7 +148,7 @@ for DB in ${DBLIST}; do
     done
     echo "QUIT;" >> ${IDSQLFILE}
     # Run the SQL script to delete records
-    sqlplus -S ${SCHEMA}/${PWD} < ${IDSQLFILE}
+    sqlplus -S ${SCHEMA}/${PASSWORD} < ${IDSQLFILE}
     rm -f ${IDFILE} ${IDSQLFILE}
 
     # Parse marc file into subfields
@@ -164,7 +163,7 @@ for DB in ${DBLIST}; do
     echo "\n`date` Loading parsed subfields into Oracle..."
     # Create control file for sqlldr, as CTLFILE
     _create_ctl_file
-    sqlldr userid=${SCHEMA}/${PWD} control=${CTLFILE} direct=FALSE \
+    sqlldr userid=${SCHEMA}/${PASSWORD} control=${CTLFILE} direct=FALSE \
       silent=\(HEADER, FEEDBACK\) \
       bindsize=512000 \
       rows=100 \
@@ -193,5 +192,5 @@ for DB in ${DBLIST}; do
 done # DB loop
 
 # Rebuild the 948 cataloging archive, which depends on the subfield db
-${BIN}/vger_rebuild_948_archive
+${VGER_SCRIPT}/vger_rebuild_948_archive
 

@@ -2,9 +2,8 @@
 
 # Send edi order files to vendors.
 
-# Voyager environment for cron
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # The magic happens here
 DIR=/m1/voyager/ucladb/edi/outgoing

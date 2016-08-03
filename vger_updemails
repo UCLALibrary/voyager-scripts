@@ -17,9 +17,8 @@ _show_usage() {
 ########################################
 # Main routine starts here
 
-# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Handle input parameters
 # props_file is required.
@@ -58,8 +57,8 @@ fi
 
 # changed to use actual latest java executable drickard 20100709
 #JAVA=/usr/jdk/latest/bin/java
-JAVA=/usr/local/bin/java
-CLASSPATH=/usr/local/java
+JAVA=${BIN}/java
+CLASSPATH=${VGER_JAVA}
 
 ${JAVA} -jar ${CLASSPATH}/updemails.jar ${PROPS_FILE} ${ERROR_FILE}
 

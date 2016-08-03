@@ -1,8 +1,8 @@
 #!/bin/sh
 # Must be run as oracle or other user in dba group
 
-# For ORACLE_HOME and other environment
-. /usr/local/bin/vger_oraenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # For running SQL commands
 SQLDBA="${ORACLE_HOME}/bin/sqlplus -S /nolog"

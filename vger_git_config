@@ -31,8 +31,11 @@ if [ -z "$1" ]; then
   _clear_variables
 else
   VGER_GIT_USER=$1
-  BIN=/usr/local/bin
-  GIT_SSH=${BIN}/vger_git_ssh
+
+  # Get voyager environment, for vars and for cron
+  . `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+  GIT_SSH=${VGER_SCRIPT}/vger_git_ssh
 
   # Handle variant username flexibly.
   # For our current Voyager workflow, AUTHOR and COMMITTER are the same person.

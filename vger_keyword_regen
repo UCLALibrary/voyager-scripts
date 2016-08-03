@@ -1,8 +1,8 @@
 #!/bin/ksh
 # ksh apparently needed since REGEN.keyword is ksh
 
-# For VGER_BASE
-. /usr/local/bin/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 DB=$1
 case ${DB} in

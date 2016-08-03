@@ -1,8 +1,7 @@
 #!/bin/sh
 
-BIN=/usr/local/bin
-# Get full environment for cron
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 DIR=/m1/voyager/ucladb/local/pia/marc
 TODAY=`date "+%Y%m%d"`    # YYYYMMDD
@@ -35,7 +34,7 @@ cat ${DIR}/pia_ftp_credentials | \
     OLDLIST=${DIR}/${BASE}_previous.lst
 
     # Get files-only list via FTP
-    $BIN/curl -l -s ftp://${ACCOUNT}:${PASSWORD}@${SITE}/${FILEDIR} > ${NEWLIST}
+    curl -l -s ftp://${ACCOUNT}:${PASSWORD}@${SITE}/${FILEDIR} > ${NEWLIST}
 
     # If new list is empty, give warning and skip the rest of this vendor/account
     if [ ! -s ${NEWLIST} ]; then
@@ -67,7 +66,7 @@ cat ${DIR}/pia_ftp_credentials | \
       comm -13 ${OLDLIST} ${NEWLIST} | while read FILE; do
         echo Retrieving "${FILE}"...
         # Retrieve file with curl -s (--silent) -S (--show-error)
-        $BIN/curl -s -S ftp://${ACCOUNT}:${PASSWORD}@${SITE}/${FILEDIR}/"${FILE}" -o "${FILE}"
+        curl -s -S ftp://${ACCOUNT}:${PASSWORD}@${SITE}/${FILEDIR}/"${FILE}" -o "${FILE}"
         # Build one combined file for loading
         cat "${FILE}" >> ${LOADFILE}
         rm "${FILE}"
@@ -79,7 +78,7 @@ cat ${DIR}/pia_ftp_credentials | \
     # If LOADFILE was created, load it into Voyager
     if [ -s ${LOADFILE} ]; then
       echo "Loading ${LOADFILE}..."
-      ${BIN}/vger_load_pia_phase_1 ${LOADFILE} ${VENDOR} ${ACCOUNT}
+      ${VGER_SCRIPT}/vger_load_pia_phase_1 ${LOADFILE} ${VENDOR} ${ACCOUNT}
       # vger_load_pia_phase_1 cleans up LOADFILE and its derivatives
     fi
 

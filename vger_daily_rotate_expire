@@ -11,9 +11,8 @@
 # Private logadm config file avoids conflicts with default in root's crontab
 LOGADM_CONF=/usr/local/etc/vger_logadm.conf export LOGADM_CONF
 
-# Set VGER_BASE
-#   VGER_BASE=/m1/voyager
-. /usr/local/bin/vger_voyenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # The asterisk in
 #   ORACLE_HOME=/oracle/app/oracle/product/*/db_1 represents one directory and
@@ -21,8 +20,6 @@ LOGADM_CONF=/usr/local/etc/vger_logadm.conf export LOGADM_CONF
 # Set ORACLE_BASE ORACLE_HOME
 #   ORACLE_BASE=/oracle/app/oracle
 #   ORACLE_HOME=/oracle/app/oracle/product/*/db_1
-. /usr/local/bin/vger_getenv
-
 
 #====== Apache logs ======#
 
@@ -133,7 +130,7 @@ do
 	# Rotate and expire Tomcat logs, which would otherwise be deleted when 
 	#   svc:/site/ExLibris/Voyager/$DB/Pwebvoyage:default calls
 	#   $DIR/tomcat/tsvrctl start
-	/usr/local/bin/vger_daily_rotate_expire_tomcat $DB
+	${VGER_SCRIPT}/vger_daily_rotate_expire_tomcat $DB
     fi
 
     # Expire more reports, misc files, extracts (Voyager could be up)

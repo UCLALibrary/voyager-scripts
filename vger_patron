@@ -2,7 +2,7 @@
 
 ############################################################
 # Voyager patron jobs, run by userid voyager from 
-# /usr/local/bin/vger_daily.
+# ${VGER_SCRIPT}/vger_daily.
 #
 # This script makes daily updates to Voyager's patron 
 # records. It first gets campus registrar and BruinCard 
@@ -32,18 +32,17 @@
 # Last revised: 2007-03-20 chunt
 ############################################################
 
-
-# VGER_BASE
-. /usr/local/bin/vger_voyenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Each Voyager database has its own directory
 # Voyager and Oracle must be up
 case `hostname` in
-eliot|wells )
+wells|p-w-voyager01 )
     SERVER=prod                 # production server
 
     # Run jobs for ucladb, but not for any other database
-    # /usr/local/bin/vger_daily will take care of rotating logs
+    # ${VGER_SCRIPT}/vger_daily will take care of rotating logs
     DIR=$VGER_BASE/ucladb
     ;;
 butler|collins )
@@ -62,34 +61,34 @@ esac
 umask 007
 
 # 2005-11-28 akohler: Retrieve other files needed for patron updates
-/usr/local/bin/vger_get_patron_files
+${VGER_SCRIPT}/vger_get_patron_files
 
 # Load daily registrar data.
-/usr/local/bin/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/registrar_data.txt /m1/voyager/ucladb/local/patron/registrar_data.ctl
+${VGER_SCRIPT}/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/registrar_data.txt /m1/voyager/ucladb/local/patron/registrar_data.ctl
 
 # Load daily BruinCard data.
-/usr/local/bin/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/bruincard_data.txt /m1/voyager/ucladb/local/patron/bruincard_data.ctl
+${VGER_SCRIPT}/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/bruincard_data.txt /m1/voyager/ucladb/local/patron/bruincard_data.ctl
 
 # Load daily Faculty and Staff e-mail data.
-/usr/local/bin/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/fsemail_data.txt /m1/voyager/ucladb/local/patron/fsemail_data.ctl
+${VGER_SCRIPT}/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/fsemail_data.txt /m1/voyager/ucladb/local/patron/fsemail_data.ctl
 
 # Load daily QDB data.
-/usr/local/bin/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/qdb_data.txt /m1/voyager/ucladb/local/patron/qdb_data.ctl
+${VGER_SCRIPT}/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/qdb_data.txt /m1/voyager/ucladb/local/patron/qdb_data.ctl
 
 # Run the procedures that create the SIF records in the database table
 # Run the procedures that create the SIF records in the database table
 # and get those records.
-/usr/local/bin/vger_sqlplus_run vger_support /m1/voyager/ucladb/local/patron/sif_daily_changes
+${VGER_SCRIPT}/vger_sqlplus_run vger_support /m1/voyager/ucladb/local/patron/sif_daily_changes
 
 # Run our interface script to Voyager's patron update utility.
-/usr/local/bin/vger_patron_update sif_daily_changes.out
+${VGER_SCRIPT}/vger_patron_update sif_daily_changes.out
 
 # Mark the records as processed on this date.
-/usr/local/bin/vger_sqlplus_run vger_support /m1/voyager/ucladb/local/patron/patron_sif_processed
+${VGER_SCRIPT}/vger_sqlplus_run vger_support /m1/voyager/ucladb/local/patron/patron_sif_processed
 
 # 20100216 drickard: Update patron email addresses to eliminate any expiration dates
-/usr/local/bin/vger_updemails /usr/local/java/voyager.properties /m1/voyager/ucladb/local/patron/vger_updemails_errors.txt
+${VGER_SCRIPT}/vger_updemails ${VGER_JAVA}/voyager.properties /m1/voyager/ucladb/local/patron/vger_updemails_errors.txt
 
 # 20120508 drickard: Execute Voyager patron purge job (actually executes on quarter--1 Jan/Apr/Jul/Oct
 # 20150916 drickard: suspending patron purge per VBT-387
-#/usr/local/bin/vger_patron_purge
+#${VGER_SCRIPT}/vger_patron_purge

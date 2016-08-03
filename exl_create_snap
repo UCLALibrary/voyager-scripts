@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# CREATE SNAPSHOT PROCEDURE
+# 1. Remove any prior backup directories or lingering snapshots/mountpoints
+# 2. Create LVM snapshots of each of the ExLibris application volumes
+# 3. Mount the snapshots
+
+APPSCRIPTDIR=/usr/local/bin/voyager/scripts
+
+BASEBACKUPDIR=/backup
+
+MNTTDIR=${BASEBACKUPDIR}/mnt
+
+# Volume Group name for ExLibris application storage LVM devices
+APP_VGNAME=vg_voyager
+
+# Logical Volume Group names contained within $APP_VGNAME
+# Expect the following: lv_m1 lv_oracle lv_oradata
+APP_LVNAME=`lvs | grep ${APP_VGNAME} | awk '{ print $1 }' | egrep -v "backup|snap"`
+
+# Snapshot Logical Volume Size
+# This is not the size of the snapshot, but rather the amount of delta that
+# is allowed to accumlate during the life time of the snapshot volume.
+# For example, if LVSIZE=2G, then 2GB worth of filesystem changes can be stored
+LVSIZE=100G
+
+TODAY=`date +%Y%m%d`
+
+for LV in ${APP_LVNAME} ; do
+  BACKUPDIR=${BASEBACKUPDIR}/`echo ${LV} | sed s/lv_//g`
+
+  # Find and remove any old/lingering back-up directories in ${BACKUPDIR}
+  # These should have already been captured by NetBackup
+  REMOVEDIR=`find ${BACKUPDIR}/* -maxdepth 0 -type d -mmin +1440 2> /dev/null`
+  if [ -n ${REMOVEDIR} ] ; then
+    for DIR in ${REMOVEDIR} ; do
+      rm -rf ${DIR}
+    done
+  fi
+
+  # Find and remove any old/lingering snapshots and/or mounts
+  OLDSNAPS=`lvs | grep ${LV} | awk '{ print $1 }' | egrep "_snap_????????"`
+  if [ -n ${OLDSNAPS} ] ; then
+    for SNAPNAME in ${OLDSNAPS} ; do
+      SNAPDATE=`echo ${SNAPNAME} | awk -F "_" '{ print $4 }'`
+      if [ ${SNAPDATE} != ${TODAY} ] ; then
+        MNTEXIST=`mount | grep ${SNAPNAME}`
+        if [ -n ${MNTEXIST} ] ; then
+          umount ${MNTTDIR}/${SNAPNAME}
+          if [ -d ${MNTTDIR}/${SNAPNAME} ] ; then
+            rm -rf ${MNTTDIR}/${SNAPNAME}
+          fi
+        fi
+        lvremove -f /dev/${APP_VGNAME}/${SNAPNAME} > /dev/null 2>&1
+        if [ $? -ne 0 ] ; then
+          echo "WARNING: Unable to remove lingering snapshot ${SNAPNAME}"
+        fi
+      fi
+    done
+  fi
+
+  lvcreate -L${LVSIZE} -s -n ${LV}_snap_${TODAY} /dev/${APP_VGNAME}/${LV} > /dev/null 2>&1
+  if [ $? -ne 0 ] ; then
+    echo "Unable to create snapshot of the ${LV} volume. Backup process halting."
+    exit 1
+  fi
+  mkdir -p ${BACKUPDIR}/${LV}_snap_${TODAY}
+  mkdir -p ${MNTTDIR}/${LV}_snap_${TODAY}
+  mount /dev/${APP_VGNAME}/${LV}_snap_${TODAY} ${MNTTDIR}/${LV}_snap_${TODAY}
+  if [ $? -ne 0 ] ; then
+    echo "Unable to mount snapshot of the ${LV} volume. Backup process halting."
+    exit 1
+  fi
+done
+
+# Hand-off to exl_snap_backup script for snapshot rsync
+${APPSCRIPTDIR}/exl_snap_backup &

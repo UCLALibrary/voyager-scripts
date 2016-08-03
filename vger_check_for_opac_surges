@@ -1,7 +1,7 @@
 #!/bin/sh
 
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 LOG=/m1/shared/apache2/logs/ucladb_vwebv/access_log
 

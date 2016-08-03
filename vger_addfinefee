@@ -18,9 +18,8 @@ _show_usage() {
 ########################################
 # Main routine starts here
 
-# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Handle input parameters
 # input_file is required.
@@ -60,8 +59,8 @@ fi
 SERVER=`hostname`.library.ucla.edu
 #changed to use actual latest java executable drickard 20100709
 #JAVA=/usr/jdk/latest/bin/java
-JAVA=/usr/local/bin/java
-JCH=/usr/local/java
+JAVA=${BIN}/java
+JCH=${VGER_JAVA}
 CLASSPATH=$JCH/vapi-core.jar:$JCH/vapi-client.jar:$JCH/commons-cli-1.0.jar:$JCH/addfinefee.jar
 PROPERTIES_FILE=$JCH/voyager.properties
 

@@ -3,9 +3,8 @@
 # Extracts MARC authority records from ucladb for BSLW processing
 # Last revised: 20080908 akohler
 
-# For cron
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 DB=ucladb
 
@@ -20,7 +19,7 @@ else
   YEAR=`date "+%Y"`
   MONTH=`date "+%m"` 
   DAY=`date "+%d"` 
-  . ${BIN}/vger_ymd  # for LAST_YYYYMM and THIS_YYYYMM
+  . ${VGER_SCRIPT}/vger_ymd  # for LAST_YYYYMM and THIS_YYYYMM
   STARTDATE=${LAST_YYYYMM}15
   ENDDATE=${THIS_YYYYMM}14
 fi
@@ -37,7 +36,7 @@ for TYPE in ${TYPES}; do
   RECORDS=${BASEDIR}/${TYPE}.mrc
 
   # Get list of record ids
-  ${BIN}/vger_sqlplus_run ${SCHEMA} ${SQL} ${STARTDATE} ${ENDDATE}
+  ${VGER_SCRIPT}/vger_sqlplus_run ${SCHEMA} ${SQL} ${STARTDATE} ${ENDDATE}
 
   # Pmarcexport appends to existing files, so delete existing
   rm -f ${RECORDS}

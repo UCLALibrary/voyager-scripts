@@ -8,8 +8,8 @@
 #
 # Last revised: 20070801 akohler
 
-# Set up environment to allow running via cron
-. /usr/local/bin/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Get USERPASS database credentials from voyager.env
 . /m1/voyager/ucladb/ini/voyager.env

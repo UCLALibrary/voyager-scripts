@@ -1,15 +1,12 @@
 #!/bin/ksh
 
-BIN=/usr/local/bin
-
-# For cron
-#. ${BIN}/vger_getenv
-. /export/home/voyager/.profile
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 DB=ucladb
 BASE=${VGER_BASE}/${DB}
 SCHEMA=vger_support
-PASSWORD=`${BIN}/get_value.pl ${BIN}/vger_db_credentials ${SCHEMA}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/vger_db_credentials ${SCHEMA}`
 
 # Everything happens here
 DIR=${BASE}/local/pia
@@ -17,7 +14,7 @@ cd ${DIR}
 
 # Get data qualifying bib_ids for records to extract
 SQL=pia_phase_2_bibs.sql
-${BIN}/vger_sqlplus_run vger_support ${SQL}
+${VGER_SCRIPT}/vger_sqlplus_run vger_support ${SQL}
 
 # Parse data from SQL and handle one record at a time
 BIBLIST=${SQL}.out
@@ -53,7 +50,7 @@ cat ${BIBLIST} | while read BIBID VENDOR ACCOUNT; do
   ${DIR}/pia_phase_2_update_bibs.pl ${BIBFILE} ${UPDBIBFILE} ${SCHEMA} ${PASSWORD}
 
   # Load updated bib record into Voyager to create order
-  $BIN/vger_bulkimport_file ${UPDBIBFILE} ucladb ${PROFILE} promptcat
+  ${VGER_SCRIPT}/vger_bulkimport_file ${UPDBIBFILE} ucladb ${PROFILE} promptcat
 
   # Rename log file and mail to interested parties
   LOGFILE=${BIBFILE}.log

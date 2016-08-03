@@ -3,12 +3,15 @@
 # Uses custom java program to build and send email circ notices
 # Last revised: 2009-04-13 drickard
 
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
 # Setup
 DIR=/m1/voyager/ucladb/rpt
 # changed to use actual latest java executable drickard 20100709
 #JAVA=/usr/jdk/latest/bin/java
-JAVA=/usr/local/bin/java
-JAVADIR=/usr/local/java
+JAVA=${BIN}/java
+JAVADIR=${VGER_JAVA}
 PROGRAM=${JAVADIR}/circmail.jar
 PROPERTIES_FILE=${JAVADIR}/notices.properties
 VERBOSE=true

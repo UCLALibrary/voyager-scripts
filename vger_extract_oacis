@@ -3,9 +3,8 @@
 
 # Export Voyager bib & holdings records for Yale's OACIS project, a union catalog of Middle Eastern serials
 
-# For cron
-BIN=/usr/local/bin
-. /export/home/voyager/.profile
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 DIR=/m1/voyager/ucladb/local/oacis
 BASE=/m1/voyager/ucladb
@@ -15,13 +14,13 @@ TMPFILE=/tmp/oacis.tmp.$$
 cd ${DIR}
 
 # Create supporting tables of MARC language data
-${BIN}/vger_sqlplus_run vger_subfields ${DIR}/create_041_043_parsed
+${VGER_SCRIPT}/vger_sqlplus_run vger_subfields ${DIR}/create_041_043_parsed
 
 # Create table with main set of data to associated with extract
-${BIN}/vger_sqlplus_run vger_report ${DIR}/create_oacis_extract
+${VGER_SCRIPT}/vger_sqlplus_run vger_report ${DIR}/create_oacis_extract
 
 # Create file of bib ids to export, from previously created database table
-${BIN}/vger_sqlplus_run ucla_preaddb ${DIR}/vger_oacis_extract
+${VGER_SCRIPT}/vger_sqlplus_run ucla_preaddb ${DIR}/vger_oacis_extract
 mv ${DIR}/vger_oacis_extract.out ${IDFILE}
 
 # Export marc bibs & mfhds in interleaved file, ignoring suppressed bibs
@@ -35,10 +34,10 @@ cat ${LOG}
 ${DIR}/remove_suppressed_mfhds.pl ${TMPFILE} oacis.mrc
 
 # Get stats
-${BIN}/vger_marc_count oacis.mrc
+${VGER_SCRIPT}/vger_marc_count oacis.mrc
 
 # Make sure new location file isn't needed
-${BIN}/vger_sqlplus_run vger_report ${DIR}/check_locations
+${VGER_SCRIPT}/vger_sqlplus_run vger_report ${DIR}/check_locations
 cat ${DIR}/check_locations.out
 
 # Clean up

@@ -2,7 +2,8 @@
 # Uses Voyager bulk import utility to load records into Voyager
 #
 
-. /usr/local/bin/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Usage
 _show_usage () {

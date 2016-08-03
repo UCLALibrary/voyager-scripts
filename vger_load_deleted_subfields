@@ -9,10 +9,8 @@ else
   exit 1
 fi
 
-BIN=/usr/local/bin
-
-# For cron
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Everything happens here
 DIR=/m1/voyager/ucladb/local/cat
@@ -25,7 +23,7 @@ ${BIN}/build_marc_subfield_file 948.mrc 948.sub
 # Switched from awk to perl due to line-length limitations in awk.
 cat 948.sub | perl -anl -F'\t' -e 'print $_ if ($F[4] =~ /LDR|008|035a|040a|049a|948/);' > 948_filtered.sub
 # Load the filtered data into database
-${BIN}/vger_sqlldr_load vger_subfields 948_filtered.sub deleted_subfields.ctl
+${VGER_SCRIPT}/vger_sqlldr_load vger_subfields 948_filtered.sub deleted_subfields.ctl
 
 # Cleanup
 rm -f 948.mrc 948*.sub

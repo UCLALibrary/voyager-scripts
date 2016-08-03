@@ -2,9 +2,8 @@
 # Loads phase 1 (pre-order) bib records into Voyager
 #  for Patron Initiated Acquisitions (PIA) project.
 
-# Voyager environment for cron
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Mandatory parameters
 if [ -z "$3" ]; then
@@ -45,7 +44,7 @@ ${BASEDIR}/pia_phase_1_update_bibs.pl ${VENDOR} ${BIBFILE} ${UPDBIBFILE}
 # Load the updated records
 # Calling script may provide full path; we must have only the filename
 UPDBIBFILE=`basename ${UPDBIBFILE}`
-${BIN}/vger_bulkimport_file ${UPDBIBFILE} ${DB} ${PROFILE} ${USER}
+${VGER_SCRIPT}/vger_bulkimport_file ${UPDBIBFILE} ${DB} ${PROFILE} ${USER}
 
 # Should always be a log file; rename it
 LOGFILE=`basename ${BIBFILE} .mrc`_phase_1.log

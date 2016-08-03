@@ -4,9 +4,8 @@
 # WARNING: Don't run this the same day as vger_make_zas_lhrs, as they both upload to same directory
 #   on OCLC's FTP site, with (required) same file names based on date.
 
-# For cron
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Get start/end dates for selecting records
 # Use provided dates, or default to previous Monday thru previous Sunday
@@ -31,12 +30,12 @@ else
     shift
   done
 
-  . ${BIN}/vger_ymd_delta
+  . ${VGER_SCRIPT}/vger_ymd_delta
   END_DATE=${YEAR}${MONTH}${DAY}
   # Go back another 6 days (to Monday before previous Sunday)
   DELTA=-6
   # Must use "set" command to assign $1 $2 $3 for vger_ymd_delta
-  set $YEAR $MONTH $DAY; . ${BIN}/vger_ymd_delta
+  set $YEAR $MONTH $DAY; . ${VGER_SCRIPT}/vger_ymd_delta
   START_DATE=${YEAR}${MONTH}${DAY}
 fi
 
@@ -52,7 +51,7 @@ PROJECT=P012226
 SYMBOL=ZAS
 
 # Get the full list of ids from database
-${BIN}/vger_sqlplus_run vger_report ${BASE} ${START_DATE} ${END_DATE}
+${VGER_SCRIPT}/vger_sqlplus_run vger_report ${BASE} ${START_DATE} ${END_DATE}
 
 # Split list into chunks of 90K or less
 split -90000 ${BASE}.out ${BASE}.
@@ -71,13 +70,13 @@ for LIST in `ls ${BASE}.?? 2>/dev/null`; do
   rm ${LIST}  
 done
 
-${BIN}/vger_make_oclc_label_files ${PROJECT} ${SYMBOL}
+${VGER_SCRIPT}/vger_make_oclc_label_files ${PROJECT} ${SYMBOL}
 
 # FTP the files to OCLC
 USER=tzas1
-PWD=`${BIN}/get_value.pl ${BIN}/oclc_credentials ${USER}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
 (
-  echo "user ${USER} ${PWD}"
+  echo "user ${USER} ${PASSWORD}"
   echo "cd 'edx.ebsb.zas.ftp'"
   echo "bin"
   echo "mput DATA*"

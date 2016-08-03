@@ -4,9 +4,8 @@
 # By default applies to all 3 production Voyager databases,
 #   but can run for 1 specific database via parameter.
 
-# Get environment for cron
-BIN=/usr/local/bin
-. ${BIN}/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 if [ -z "$2" ]; then
   echo "Usage: $0 yyyy mm [db]"
@@ -37,7 +36,7 @@ for DB in ${DBLIST}; do
     echo "commit;"
   ) > ${SQLFILE}
 
-  ${BIN}/vger_sqlplus_run vger_report ${SQLFILE}
+  ${VGER_SCRIPT}/vger_sqlplus_run vger_report ${SQLFILE}
   # Look at the log
   cat ${OUTFILE}
   # Clean up

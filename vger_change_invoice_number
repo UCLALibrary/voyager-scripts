@@ -1,10 +1,8 @@
 #!/bin/ksh
 # ksh because voyager.env (included below) is ksh
 
-BIN=/usr/local/bin
-
-# Get voyager environment
-. ${BIN}/vger_voyenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Mandatory arguments
 if [ -z "$2" ]; then
@@ -47,7 +45,7 @@ END_OF_SQL
 #cat ${SQLFILE}
 
 # Execute the SQL
-${BIN}/vger_sqlplus_run ucladb ${SQLFILE}
+${VGER_SCRIPT}/vger_sqlplus_run ucladb ${SQLFILE}
 
 # View results, with before & after info
 cat ${SQLFILE}.out

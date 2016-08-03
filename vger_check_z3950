@@ -5,8 +5,8 @@
 #
 # Last revised: 2007-08-28 akohler
 
-# Get voyager environment for cron
-. /usr/local/bin/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Check to see if ucla z39.50 parent process is running (ppid = 1)
 PS=`ps -ef -o ppid,args | grep z39 | grep ucladb | grep "^    1"`

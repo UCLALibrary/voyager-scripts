@@ -9,7 +9,9 @@ else
   INVOICE_ID=$1
 fi
 
-BIN=/usr/local/bin
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
 DIR=/m1/voyager/ucladb/local/vbbi
 cd ${DIR}
 
@@ -17,7 +19,7 @@ BASE=vbbi_reset_invoice
 DATE=`date "+%Y%m%d"` #YYYYMMDD
 
 # Generate file of invoice data
-${BIN}/vger_sqlplus_run vger_support ${BASE} ${INVOICE_ID}
+${VGER_SCRIPT}/vger_sqlplus_run vger_support ${BASE} ${INVOICE_ID}
 
 # Rename output file and archive/flag it based on content
 LOGFILE=${BASE}.out.${DATE}.${INVOICE_ID}

@@ -10,7 +10,9 @@
 LC_CTYPE=en_US.UTF-8
 export LC_CTYPE
 
-BIN=/usr/local/bin
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
 JAVA=${BIN}/java
 
 # Supporting files are all here
@@ -21,10 +23,10 @@ JARFILE=${SUPPORTDIR}/rss-feeds.jar
 # Properties file describes which directories hold the .xml files
 PROPSFILE=${SUPPORTDIR}/rss.properties
 #output directory used below for archiving one feed
-OUTPUTDIR=/usr/local/www/rss/feeds
+OUTPUTDIR=/m1/voyager/ucladb/local/rss/feeds
 #date in YYYYMMDD format for archiving all_law feed
 DELTA=-1
-. ${BIN}/vger_ymd_delta
+. ${VGER_SCRIPT}/vger_ymd_delta
 YESTERDATE=${YEAR}${MONTH}${DAY}
 
 # Make sure supporting files are available
@@ -48,7 +50,7 @@ fi
 # Temporary override until/unless manifests are rebuilt:
 #$JAVA -jar $DATAJARFILE $PROPSFILE
 #$JAVA -jar $JARFILE $PROPSFILE
-J=/usr/local/java
+J=${VGER_JAVA}
 CLASSPATH=$J/spring.jar:$J/oracle.jar:$J/commons.jar:$J/jdom.jar:$J/rome-0.8.jar
 
 $JAVA -cp $CLASSPATH:$DATAJARFILE edu.ucla.library.libservices.beans.FeedDataBuilder $PROPSFILE

@@ -77,7 +77,7 @@ cat ${CONFIG}/edi_invoice_sources.lst | \
         echo "ascii"
         echo "mget ${FILESPEC}"
         echo "quit"
-      ) | ftp -i -n -T 120 ${MACHINE}
+      ) | ftp -i -n ${MACHINE}
 
       # Move new files from TEMP to appropriate VENDOR directory, without affecting existing files
       # This preserves dates from original retrieval, which we'll use later to remove old files.

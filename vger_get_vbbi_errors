@@ -1,17 +1,19 @@
 #!/bin/sh
 # Retrieves VBBI error file
 
-BIN=/usr/local/bin
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
 DIR=/m1/voyager/ucladb/local/vbbi
 cd ${DIR}
 
 USER=bb_library
-PWD=`${BIN}/get_value.pl ${BIN}/ais_credentials ${USER}`
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/ais_credentials ${USER}`
 DATE=`date "+%Y%m%d"` #YYYYMMDD
 PACNAME=BATCH-AP-LIBRY-ERR
 LIBNAME=${PACNAME}.${DATE}
 (
-  echo "user ${USER} ${PWD}"
+  echo "user ${USER} ${PASSWORD}"
   echo "get ${PACNAME} ${LIBNAME}"
   echo "quit"
 ) | ftp -n -v fx.it.ucla.edu
@@ -20,7 +22,7 @@ LIBNAME=${PACNAME}.${DATE}
 if [ -s ${LIBNAME} ]; then
   wc -l ${LIBNAME}
   cat ${LIBNAME}
-  ${BIN}/vger_sqlldr_load vger_support ${LIBNAME} ${DIR}/vbbi_batch_errors.ctl
+  ${VGER_SCRIPT}/vger_sqlldr_load vger_support ${LIBNAME} ${DIR}/vbbi_batch_errors.ctl
   mv ${LIBNAME} ${DIR}/archive/
   rm ${LIBNAME}.log
 else

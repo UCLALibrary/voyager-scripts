@@ -9,17 +9,17 @@ _Usage () {
   echo "Usage: `basename $0` filmntv|ucla jobnumber (11,12,13)"
 }
 
-# Set VGER_BASE and other voyager & oracle environment, so we can run from cron
-. /usr/local/bin/vger_getenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Each Voyager training and production db has its own scripts directory
 # Script names begin with T for training and P for production
 # Voyager and Oracle must be up
 case `hostname` in
-eliot|wells )
+p-w-voyager01|wells )
     SERVER=production			# production server
     ;;
-butler|collins )
+p-w-voyager01|collins )
     SERVER=test				# test server
     ;;
 * )
@@ -75,15 +75,14 @@ case $JOB in
     if [ ${DB} = ucladb -a ${SERVER} = production ]; then
         # Get USERPASS for sqlplus
         . ${DIR}/ini/voyager.env
-        # sqlplus path set above, via vger_getenv
-        sqlplus -S $USERPASS @/usr/local/bin/vger_before_global_heading_change.sql
+        sqlplus -S $USERPASS @${VGER_SCRIPT}/vger_before_global_heading_change.sql
     fi
 
     # Run the Voyager job, with this output just to LIT LWS
     $DIR/sbin/Pcatjob -j${JOB} -Llissystem 2>&1 | mailx -s "GHC step 3 cron - ${SERVER} - ${DB}" lit-libweb@library.ucla.edu
 
     # Send the whole log to the catalogers
-    cat $DIR/rpt/catjob.log | mailx -s "GHC step 3 - ${SERVER} - ${DB}" ${MAILTO}
+    cat $DIR/rpt/catjob.log | ${VGER_SCRIPT}/vger_clean_for_email | mailx -s "GHC step 3 - ${SERVER} - ${DB}" ${MAILTO}
     ;;
 * )
     _Usage

@@ -1,4 +1,4 @@
-#!/bin/perl
+#!/m1/shared/bin/perl
 
 ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(( time() - ( 24 * 60 * 60 ) ));
 $mon += 1;

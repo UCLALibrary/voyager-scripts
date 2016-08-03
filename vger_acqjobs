@@ -1,24 +1,23 @@
 #!/bin/sh
 
-# Voyager acq jobs, run by userid voyager from /usr/local/bin/vger_daily
+# Voyager acq jobs, run by userid voyager from ${VGER_SCRIPT}/vger_daily
 # Could also be run by userid law
 
-BIN=/usr/local/bin
-# VGER_BASE
-. ${BIN}/vger_voyenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Each Voyager training and production db has its own scripts directory
 # Script names begin with T for training and P for production
 # Voyager and Oracle must be up
 case `hostname` in
-eliot|wells )
+p-w-voyager01|wells )
     SERVER=prod			# production server
 
     # Run jobs for ucladb, but not for any other database
-    # /usr/local/bin/vger_daily will take care of rotating logs
+    # ${VGER_SCRIPT}/vger_daily will take care of rotating logs
     DIR=$VGER_BASE/ucladb
     ;;
-butler|collins )
+t-w-voyager01|collins )
     SERVER=test			# test server
 
     echo "$0: this script can run only on the production server"
@@ -51,16 +50,15 @@ esac
 # Uses wget, which sends output to stderr
 # 2006-08-31 gloriar: Need fully-qualified email address unless in /etc/aliases
 echo "Retrieving EDI invoice files..."
-${BIN}/vger_get_edi_files 2>&1 | mailx -s "EDI files retrieved" \
+${VGER_SCRIPT}/vger_get_edi_files 2>&1 | mailx -s "EDI files retrieved" \
 	agreenwa@library.ucla.edu lit-libweb@library.ucla.edu
 
 # Send EDI files to various vendors
-${BIN}/vger_send_edi_orders 2>&1 | mailx -s "EDI files sent" \
+${VGER_SCRIPT}/vger_send_edi_orders 2>&1 | mailx -s "EDI files sent" \
   lit-libweb@library.ucla.edu
 
 # Retrieve EOD (order) files from various vendors
-${BIN}/vger_load_gobi
-# 20160528: CAS and HAR disabled for fiscal close
-#${BIN}/vger_load_harrassowitz
-#${BIN}/vger_load_casalini
+${VGER_SCRIPT}/vger_load_gobi
+${VGER_SCRIPT}/vger_load_harrassowitz
+${VGER_SCRIPT}/vger_load_casalini
 

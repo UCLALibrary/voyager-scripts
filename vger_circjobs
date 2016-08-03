@@ -1,21 +1,21 @@
 #!/bin/sh
 
-# Voyager circ jobs, run by userid voyager from /usr/local/bin/vger_daily
+# Voyager circ jobs, run by userid voyager from ${VGER_SCRIPT}/vger_daily
 
-# VGER_BASE
-. /usr/local/bin/vger_voyenv
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 # Each Voyager training and production db has its own scripts directory
 # Script names begin with T for training and P for production
 # Voyager and Oracle must be up
 case `hostname` in
-eliot|wells )
+wells|p-w-voyager01 )
     SERVER=prod			# production server
 
     # Run jobs for ucladb, but not for any other database
     # 12 Jul 2004 add ethnodb filmntvdb ucladb
     # 13 Jul 2004 disable ethnodb and filmntvdb
-    # /usr/local/bin/vger_daily will take care of rotating logs
+    # ${VGER_SCRIPT}/vger_daily will take care of rotating logs
     DIR=$VGER_BASE/ucladb
     ;;
 butler|collins )
@@ -33,16 +33,13 @@ esac
 # Variable to identify winter closure period, based on logic in vger_bar; drickard 20091123
 NON_CLOSURE=`${DIR}/local/circ/bin/non_closure`
 
-# path used to locate Perl function called below drickard 20130220
-BIN=/usr/local/bin
-
 # Daily forever
 # Capture reserve status of items from the previous day to the 
 # UCLADB_RESERVE_TRANS table in the vger_report schema.
-/usr/local/bin/vger_sqlplus_run vger_support /m1/voyager/ucladb/local/patron/insert_reserve_trans
+${VGER_SCRIPT}/vger_sqlplus_run vger_support /m1/voyager/ucladb/local/patron/insert_reserve_trans
 
 # Capture circ stats
-/usr/local/bin/vger_circ_transaction_log
+${VGER_SCRIPT}/vger_circ_transaction_log
 
 # Run Circjob 1 (Update Shelving Status) and 
 # Circjob 2 (Overdue Notices). The latter creates 
@@ -60,7 +57,7 @@ done
 # Run the process that sends student fines to BAR
 # and updates in Voyager which of those fines have
 # been paid or credited.
-/usr/local/bin/vger_bar
+${VGER_SCRIPT}/vger_bar
 
 # Run various other Voyager circ jobs
 for JOB in 3 4 5 6 7 8 24
@@ -72,7 +69,7 @@ done
 TODAY=`date "+%Y%m%d"`		# date format is YYYYMMDD
 DOW=`date "+%w"`		# 0..6 for Sun..Sat
 DOM=`date "+%d"`		# 01..31
-YESTERDAY=`${BIN}/get_yesterday.pl` # today - 1 in YYYYMMDD
+YESTERDAY=`${VGER_SCRIPT}/get_yesterday.pl` # today - 1 in YYYYMMDD
 
 # Expired holds job: Run daily per Val request drickard 20130220
 ${DIR}/sbin/Pcircjob -j19 -s${YESTERDAY} -e${TODAY}
@@ -160,7 +157,7 @@ fi
 # First Tuesday of the month
 if [ ${DOW} -eq 2 -a ${DOM} -le 7 ]; then
     EMAILLOG=${DIR}/rpt/email_${TODAY}.log
-    /usr/local/bin/vger_email_finefee_notices > ${EMAILLOG} 2>&1
+    ${VGER_SCRIPT}/vger_email_finefee_notices > ${EMAILLOG} 2>&1
     egrep "crcnotes|^Notices sent" ${EMAILLOG} \
       | mailx -s "Email fee/fine notices sent ${TODAY}" \
         cmedina@library.ucla.edu lit-libweb@library.ucla.edu
@@ -170,17 +167,17 @@ fi
 # for the Public Service Stats database.
 # First of the month
 if [ ${DOM} -eq 1 ]; then
-    /usr/local/bin/vger_circ_stats_export
+    ${VGER_SCRIPT}/vger_circ_stats_export
 fi
 
 # 2005-01-11 akohler: every day, generate file of course reserves data for outside consumption
 #   Related to circjob 34
-/usr/local/bin/vger_extract_reserves_data
+${VGER_SCRIPT}/vger_extract_reserves_data
 
 # 2009-03-23 drickard: starting ca. 6 April, will auto-generate circulation email notices
 # 2009-11-19 drickard: adding logic to not mail during closure, modeled on logic from vger_bar
 if [ ${NON_CLOSURE} = "True" ]; then
-  /usr/local/bin/vger_email_circ_notices
+  ${VGER_SCRIPT}/vger_email_circ_notices
 else
   echo "Not mailing circ notices during winter closure"
 fi
