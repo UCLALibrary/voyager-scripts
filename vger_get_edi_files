@@ -74,7 +74,7 @@ cat ${CONFIG}/edi_invoice_sources.lst | \
         if [ ${FILEDIR} != "/" ]; then
           echo "cd ${FILEDIR}"
         fi
-        echo "ascii"
+        echo "bin"
         echo "mget ${FILESPEC}"
         echo "quit"
       ) | ftp -i -n ${MACHINE}
