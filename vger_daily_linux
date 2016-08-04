@@ -12,9 +12,9 @@ echo `date`: Shut down apache, voyager and oracle
 /etc/init.d/voyager stop
 /etc/init.d/dbora stop
 
-echo `date`: Starting vger_snap_backup
-${VGER_SCRIPT}/vger_snap_backup
-echo `date`: Finished vger_snap_backup
+echo `date`: Starting snapshots...
+${VGER_SCRIPT}/exl_create_snap
+echo `date`: Finished snapshots
 
 echo `date`: Start oracle, voyager and apache
 /etc/init.d/dbora start
