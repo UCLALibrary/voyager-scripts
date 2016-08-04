@@ -6,7 +6,7 @@
 ############################################################
 
 _show_usage() {
-  echo "\nUSAGE:"
+  echo -e "\nUSAGE:"
   echo "$0 props_file error_file"
   echo "  where props_file is a list of config values for UpdatePatronEmail"
   echo "  and error_file is the error file which lists return codes for rows which caused errors."
@@ -51,7 +51,7 @@ fi
 # Delete error file from previous run if it exists.
 # This is data that causes non-zero return codes.
 if [ -f ${ERROR_FILE} ]; then
-  echo "\n***** Removing old error file ${ERROR_FILE} *****"
+  echo -e "\n***** Removing old error file ${ERROR_FILE} *****"
   rm ${ERROR_FILE}
 fi
 
@@ -71,5 +71,5 @@ esac
 
 # Draw attention to error file, if present
 if [ -f ${ERROR_FILE} ]; then
-  echo "\n***** Look at error file ${ERROR_FILE} *****"
+  echo -e "\n***** Look at error file ${ERROR_FILE} *****"
 fi

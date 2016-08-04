@@ -13,7 +13,7 @@
 ############################################################
 
 _show_usage() {
-  echo "\nUSAGE:"
+  echo -e "\nUSAGE:"
   echo "$0 schema data_file control_file"
   echo "  where schema used to access the database"
   echo "  and data_file is a set of text-based records"
@@ -72,7 +72,7 @@ fi
 # Delete "bad" file from previous run if it exists.
 # This is data rejected by sqlldr, often duplicate primary keys.
 if [ -f ${INFILE}.bad ]; then
-  echo "\n***** Removing old ${INFILE}.bad *****\n"
+  echo -e "\n***** Removing old ${INFILE}.bad *****\n"
   rm ${INFILE}.bad
 fi
 
@@ -82,7 +82,7 @@ OUTDIR=.
     # Load data into Oracle database, using provided credentials.
     # For these updates, use conventional path load to avoid index conflicts
     # set larger values for rows & bindsize (was using defaults)
-    echo "\n`date` Loading data into Oracle..."
+    echo -e "\n`date` Loading data into Oracle..."
     sqlldr userid=$SCHEMA/$PASSWORD control=${CTLFILE} direct=FALSE \
       silent=\(HEADER, FEEDBACK, DISCARDS\) \
       bindsize=512000 \
@@ -104,13 +104,13 @@ OUTDIR=.
     if [ -f ${INFILE}.log ]; then
       cat ${INFILE}.log
     else
-      echo "\n***** No log file was generated. *****\n"
+      echo -e "\n***** No log file was generated. *****\n"
     fi 
 
     # Draw attention to "bad" file (data rejected by sqlldr), if present
     if [ -f ${INFILE}.bad ]; then
-      echo "\n***** Look at ${INFILE}.bad *****\n"
+      echo -e "\n***** Look at ${INFILE}.bad *****\n"
     fi
 
     echo "`date` Completed loading ${INFILE} into Oracle."
-    echo "\n************************************************************"
+    echo -e "\n************************************************************"

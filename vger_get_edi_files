@@ -67,7 +67,7 @@ cat ${CONFIG}/edi_invoice_sources.lst | \
       # For now, use ftp for all retrievals for consistency
       # ftp -n so .netrc won't be used; see comments about .netrc at top of loop
       # 2006-03-23 akohler: not using mdel - too many sites don't allow us to delete
-      echo "\nGetting EDI files for ${VENDOR}"
+      echo -e "\nGetting EDI files for ${VENDOR}"
       (
         echo "user ${USER} ${PASSWORD}"
         echo "lcd ${TEMP}"
@@ -93,7 +93,7 @@ cat ${CONFIG}/edi_invoice_sources.lst | \
             rm -f ${TEMP}/${FILE}
           else
             # Same name, different content - unlikely, but output error message
-            echo "\n*** WARNING: ${VENDOR}/${FILE} exists but new version is different ***\n"
+            echo -e "\n*** WARNING: ${VENDOR}/${FILE} exists but new version is different ***\n"
           fi
         fi # TEMP/VENDOR comparison
       done # for FILE in TEMP

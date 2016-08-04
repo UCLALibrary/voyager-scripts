@@ -26,7 +26,7 @@ _get_ratio() {
 # Get voyager environment, for vars and for cron
 . `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
-echo "\nChecking sizes of production keyword indexes:"
+echo -e "\nChecking sizes of production keyword indexes:"
 # Check production databases
 for DB in ethnodb filmntvdb ucladb; do
   for TYPE in bib mfhd; do
@@ -57,10 +57,10 @@ for DB in ethnodb filmntvdb ucladb; do
 
     echo "${DB} ${TYPE} keyword dynamic/static ratio is ${RATIO}"
     if [ ${RATIO} -gt ${THRESHOLD} ]; then
-      echo "\tRunning regen for ${DB} ${TYPE}..."
-      echo "\tStart: `date`"
+      echo -e "\tRunning regen for ${DB} ${TYPE}..."
+      echo -e "\tStart: `date`"
       ${VGER_SCRIPT}/${REGEN_SCRIPT} ${DB} ${TYPE}
-      echo "\tEnd  : `date`"
+      echo -e "\tEnd  : `date`"
     fi
   done # for TYPE
 done # for DB

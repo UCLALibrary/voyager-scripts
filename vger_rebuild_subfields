@@ -8,7 +8,7 @@
 #################
 
 _show_usage() {
-  echo "\nUSAGE:"
+  echo -e "\nUSAGE:"
   echo "$0 database type [start_id] [end_id]"
   echo "  where database is one of: ethnodb filmntvdb ucladb"
   echo "  and type is one of: auth bib mfhd"
@@ -135,16 +135,16 @@ while [ ${START} -le ${MAXID} ]; do
   rm ${LOG}
 
   # Parse marc file into subfields
-  echo "\n`date` Parsing marc records..."
+  echo -e "\n`date` Parsing marc records..."
   # ${BIN}/build_marc_subfield_file ${MARCFILE} ${SUBFIELDFILE}.unsorted
   ${BIN}/build_marc_subfield_file ${MARCFILE} ${SUBFIELDFILE}
 
   # not building oracle indexes first, so no point in pre-sorting
-  # echo "\n`date` Sorting subfield file..."
+  # echo -e "\n`date` Sorting subfield file..."
   # sort -t '	' -k 5,5 -k 1,1n ${SUBFIELDFILE}.unsorted > ${SUBFIELDFILE}
 
   # Load data into Oracle database, in vger_subfields schema & tablespace
-  echo "\n`date` Loading parsed subfields into Oracle..."
+  echo -e "\n`date` Loading parsed subfields into Oracle..."
   sqlldr userid=${SCHEMA}/${PASSWORD} control=${CTLFILE} direct=TRUE \
     data=${SUBFIELDFILE} \
     bad=${SUBFIELDFILE}.bad \
@@ -155,7 +155,7 @@ while [ ${START} -le ${MAXID} ]; do
 
   # Draw attention to "bad" file (data rejected by sqlldr), if present
   if [ -f ${SUBFIELDFILE}.bad ]; then
-    echo "\n***** Look at ${SUBFIELDFILE}.bad *****\n"
+    echo -e "\n***** Look at ${SUBFIELDFILE}.bad *****\n"
   fi
 
   # Clean up

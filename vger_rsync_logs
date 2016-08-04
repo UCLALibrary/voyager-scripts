@@ -76,5 +76,5 @@ for db in $db_list; do
 	    -s "$self: Error: Check $src:$log" lit-libweb@library.ucla.edu root@library.ucla.edu
     fi
     echo "$output" | logger -p local1.info 
-    echo "End rsync ($src:$ldir -> $rdir)\n" | logger -p local1.info 
+    echo -e "End rsync ($src:$ldir -> $rdir)\n" | logger -p local1.info 
 done

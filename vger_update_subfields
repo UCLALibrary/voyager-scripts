@@ -10,7 +10,7 @@
 ########################################
 
 _show_usage() {
-  echo "\nUSAGE:"
+  echo -e "\nUSAGE:"
   echo "$0 database type [start_date] [end_date]"
   echo "  where database is one of: ethnodb filmntvdb ucladb ALL"
   echo "  and type is one of: auth bib mfhd ALL"
@@ -129,7 +129,7 @@ for DB in ${DBLIST}; do
     # need to remove existing data, for changed records and for deleted records.
     # Get the record ids from extracted records and from Voyager's deleted.*.marc files
     # Considerably faster this way than by using pure SQL to find and delete.
-    echo "\n`date` Removing subfields for changed and deleted records..."
+    echo -e "\n`date` Removing subfields for changed and deleted records..."
     DELFILE=${BASE}/rpt/deleted.${TYPE}.marc
     IDFILE=${OUTDIR}/`basename ${MARCFILE} .mrc`.ids
     IDSQLFILE=${IDFILE}.sql
@@ -152,7 +152,7 @@ for DB in ${DBLIST}; do
     rm -f ${IDFILE} ${IDSQLFILE}
 
     # Parse marc file into subfields
-    echo "\n`date` Parsing marc records..."
+    echo -e "\n`date` Parsing marc records..."
     SUBFIELDFILE=${OUTDIR}/`basename ${MARCFILE} .mrc`.txt
     rm -f ${SUBFIELDFILE}
     ${BIN}/build_marc_subfield_file ${MARCFILE} ${SUBFIELDFILE}
@@ -160,7 +160,7 @@ for DB in ${DBLIST}; do
     # Load data into Oracle database, in local schema & tablespace
     # For these updates, use conventional path load to avoid index conflicts
     # 20060215: set larger values for rows & bindsize (was using defaults)
-    echo "\n`date` Loading parsed subfields into Oracle..."
+    echo -e "\n`date` Loading parsed subfields into Oracle..."
     # Create control file for sqlldr, as CTLFILE
     _create_ctl_file
     sqlldr userid=${SCHEMA}/${PASSWORD} control=${CTLFILE} direct=FALSE \
@@ -176,7 +176,7 @@ for DB in ${DBLIST}; do
 
     # Draw attention to "bad" file (data rejected by sqlldr), if present
     if [ -f ${SUBFIELDFILE}.bad ]; then
-      echo "\n***** Look at ${SUBFIELDFILE}.bad *****\n"
+      echo -e "\n***** Look at ${SUBFIELDFILE}.bad *****\n"
     fi
 
     # Clean up
@@ -186,7 +186,7 @@ for DB in ${DBLIST}; do
     rm ${SUBFIELDFILE}.log
 
     echo "`date` Finished updating ${TABLE} for ${STARTDATE}-${ENDDATE}"
-    echo "\n************************************************************"
+    echo -e "\n************************************************************"
 
   done # TYPE loop
 done # DB loop

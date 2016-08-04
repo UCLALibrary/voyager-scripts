@@ -6,7 +6,7 @@
 # Get voyager environment, for vars and for cron
 . `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
-echo "\nChecking sizes of production keyword indexes:"
+echo -e "\nChecking sizes of production keyword indexes:"
 # Check production databases
 for DB in ethnodb filmntvdb ucladb; do
   # Bib keyword
