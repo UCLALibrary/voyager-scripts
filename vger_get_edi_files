@@ -74,7 +74,12 @@ cat ${CONFIG}/edi_invoice_sources.lst | \
         if [ ${FILEDIR} != "/" ]; then
           echo "cd ${FILEDIR}"
         fi
-        echo "bin"
+	# ASCII is best - and required for some vendors (EBS, HEI) but bin avoids warnings with others (COU)
+	if [ ${VENDOR} = "COU" ]; then
+	  echo "bin"
+	else
+	  echo "ascii"
+	fi
         echo "mget ${FILESPEC}"
         echo "quit"
       ) | ftp -i -n ${MACHINE}
