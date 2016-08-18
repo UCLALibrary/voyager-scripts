@@ -49,18 +49,23 @@ echo "Checking for files for date: ${DATE}"
 # No text files any more?  Available via WCP web interface, not needed for load.
 # Still using YYMMDD for compatibility with BatchCat process;
 # hard-coded century below will break in 2100, if you're still using this you deserve it.
-
+USER=clu
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
 (
+  echo "user ${USER} ${PASSWORD}"
   echo "cd /metacoll/out/ongoing/wcp/"
   echo "bin"
   echo "mget *.D20${DATE}.*.mrc"
   echo "quit"
-) | ftp -i -v ftp2.oclc.org
+) | ftp -i -n -v ftp2.oclc.org
 
 echo ""
 
 # List what we have, for convenience
 ls -l *${DATE}*
+
+exit 1
+
 
 # Rename the MARC files.
 # All records need pre-processing. 

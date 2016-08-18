@@ -84,14 +84,17 @@ cat lhrs_internet.mrc lhrs_physical.mrc > DATA.D${YYMMDD}
 ${VGER_SCRIPT}/vger_make_oclc_label_files ${PROJECT}
 
 # FTP the files to OCLC
+USER=tclu1
+PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
 (
+  echo "user ${USER} ${PASSWORD}"
   echo "cd 'edx.ebsb.clu.ftp'"
   echo "bin"
   echo "mput DATA*"
   echo "mput LABEL*"
   echo "dir"
   echo "quit"
-) | ftp -i -v edx.oclc.org
+) | ftp -i -n -v edx.oclc.org
 
 ## Cleanup
 mv ${DIR}/DATA* ${DIR}/LABEL* ${DIR}/archive/
