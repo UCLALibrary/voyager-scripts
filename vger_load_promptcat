@@ -64,9 +64,6 @@ echo ""
 # List what we have, for convenience
 ls -l *${DATE}*
 
-exit 1
-
-
 # Rename the MARC files.
 # All records need pre-processing. 
 # Approvals will be further processed and loaded; 
