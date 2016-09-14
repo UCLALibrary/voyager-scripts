@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# This is a monitoring script that is meant to be run via NRPE on the Nagios server.
+# It determines if the tomcat services listed in $APP_NAME are running
+# If it finds that any are stopped the appropriate service(s) is/are restarted
+
+# Nagios Exit States
+STATE_OK=0
+STATE_CRIT=2
+
+# Use this counter to determine if we needed to start any tomcat services
+STOP_COUNT=0
+
+# These are our three tomcat services to check
+APP_NAME="ucladb ethnodb filmntvdb"
+
+# User account needed for running the Voyager tomcat stop/start script
+VGER_USER=voyager
+
+for APP in $APP_NAME ; do
+	PROC=`ps -ef | grep "/m1/voyager/$APP/tomcat/java/bin/java" | grep -v grep | awk '{ print $8 }'`
+
+	if [ -z $PROC ] ; then
+		STOP_COUNT=$((STOP_COUNT+1))
+		echo "Tomcat for $APP is STOPPED! Restarting at `date +%Y-%m-%d" "%H:%M:%S`." 
+		# Execute the stop script to ensure a clean tomcat stop occurred before starting
+		sudo -u $VGER_USER /m1/voyager/$APP/tomcat/tsvrctl stop > /dev/null 2>&1
+		sudo -u $VGER_USER /m1/voyager/$APP/tomcat/tsvrctl start > /dev/null 2>&1
+	fi
+done
+
+# By the time we reach here all tomcat services should be started.
+# If any services needed a restart, we want to exit with CRITICAL status
+# to ensure that Nagios sends out a notification email
+if [ $STOP_COUNT -gt 0 ] ; then
+	exit $STATE_CRIT
+else
+	echo "$APP_NAME tomcat services are running"
+	exit $STATE_OK
+fi
+
