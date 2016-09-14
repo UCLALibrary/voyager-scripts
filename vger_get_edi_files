@@ -125,6 +125,10 @@ cat ${CONFIG}/edi_invoice_sources.lst | \
             # HAR uses too-long filenames; keep only selected parts
             SYMFILE=`echo ${FILE} | awk -F. '{ print $1 "." $3 "." $4 }'`
             ;;
+	  JPT    )
+	    # JPT includes their vendor code (as Jpt) already; remove it since we add in the next step.
+	    SYMFILE=`echo ${FILE} | sed 's/^Jpt_//'`
+	    ;;
           MID    )
             # MID uses too-long filenames; keep only selected parts
             SYMFILE=`echo ${FILE} | awk -F. '{ print $2 "." $3 }'`
