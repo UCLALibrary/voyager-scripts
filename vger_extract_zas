@@ -45,46 +45,30 @@ cd ${DIR}
 
 DB=${VGER_BASE}/ucladb
 BASE=zas_extract
-COUNTER=1
 DATE=`date "+%y%m%d"` #YYMMDD
-PROJECT=P012226
+COLLECTION_ID=1013211
 SYMBOL=ZAS
 
 # Get the full list of ids from database
 ${VGER_SCRIPT}/vger_sqlplus_run vger_report ${BASE} ${START_DATE} ${END_DATE}
+LIST=${BASE}.out
 
-# Split list into chunks of 90K or less
-split -90000 ${BASE}.out ${BASE}.
-rm ${BASE}.out
-
-for LIST in `ls ${BASE}.?? 2>/dev/null`; do
-  OCLCNAME=DATA.D${DATE}.FILE${COUNTER}
-  COUNTER=`expr ${COUNTER} + 1`
-  if [ ${COUNTER} -eq 20 ]; then
-    DATE=`expr ${DATE} + 1`
-    COUNTER=1
-  fi
-
-  ${DB}/sbin/Pmarcexport -o${OCLCNAME} -rB -mM -t${LIST} -q
-
-  rm ${LIST}  
-done
-
-${VGER_SCRIPT}/vger_make_oclc_label_files ${PROJECT} ${SYMBOL}
+OCLCFILE=${COLLECTION_ID}.${SYMBOL}.${DATE}.mrc
+${DB}/sbin/Pmarcexport -o${OCLCFILE} -rB -mM -t${LIST} -q
+rm ${LIST}
 
 # FTP the files to OCLC
-USER=tzas1
+USER=zas
 PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
 (
   echo "user ${USER} ${PASSWORD}"
-  echo "cd 'edx.ebsb.zas.ftp'"
+  echo "cd /metacoll/in/bib"
   echo "bin"
-  echo "mput DATA*"
-  echo "mput LABEL*"
+  echo "put ${OCLCFILE}"
   echo "dir"
   echo "quit"
-) | ftp -i -n -v edx.oclc.org
+) | ftp -i -n -v ftp2.oclc.org
 
 # Clean up
-mv DATA* LABEL* ${DIR}/archive
+mv ${OCLCFILE} ${DIR}/archive
 
