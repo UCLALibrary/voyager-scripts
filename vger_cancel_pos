@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+JAVA=${BIN}/java
+CLASSPATH=${VGER_JAVA}/ojdbc14.jar:${VGER_JAVA}/vapi-core.jar:${VGER_JAVA}/vapi-client-2015.jar:${VGER_JAVA}/pocanceller.jar
+PROGRAM=edu.ucla.library.libservices.voyager.PoCanceller
+PROPFILE=${VGER_JAVA}/pocanceller.properties
+
+${JAVA} -cp ${CLASSPATH} ${PROGRAM} ${PROPFILE}
+
