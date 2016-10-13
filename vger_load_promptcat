@@ -88,6 +88,13 @@ SCHEMA=vger_support
 PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/vger_db_credentials $SCHEMA`
 for FILE in Y*.mrc; do 
   if [ -f ${FILE} ]; then
+    # QAD check for duplicate records, based on 001 fields
+    MARC_COUNT=`marcview ${FILE} | grep "^001" | wc -l`
+    MARC_UNIQUE=`marcview ${FILE} | grep "^001" | sort -u | wc -l`
+    if [ ${MARC_COUNT} -ne ${MARC_UNIQUE} ]; then
+      echo "ERROR: ${FILE} contains duplicate records - exiting"
+      exit 1
+    fi
     echo "Adding acq info to ${FILE}..."
     mv ${FILE} ${FILE}.bak
     ${SCRIPTS}/prep_ybp.pl ${FILE}.bak ${FILE} ${SCHEMA} ${PASSWORD}
