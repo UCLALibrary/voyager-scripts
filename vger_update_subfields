@@ -129,17 +129,16 @@ for DB in ${DBLIST}; do
     # need to remove existing data, for changed records and for deleted records.
     # Get the record ids from extracted records and from Voyager's deleted.*.marc files
     # Considerably faster this way than by using pure SQL to find and delete.
-    echo -e "\n`date` Removing subfields for changed and deleted records..."
     DELFILE=${BASE}/rpt/deleted.${TYPE}.marc
     IDFILE=${OUTDIR}/`basename ${MARCFILE} .mrc`.ids
     IDSQLFILE=${IDFILE}.sql
     rm -f ${IDFILE} ${IDSQLFILE}
 
     # Get the record ids from the 001 fields
+    echo -e "\n`date` Removing subfields for deleted records..."
     ${VGER_SCRIPT}/vger_get_marc_ids_by_date.pl ${DELFILE} ${STARTDATE} ${ENDDATE} > ${IDFILE}
+    echo -e "\n`date` Removing subfields for deleted records..."
     ${VGER_SCRIPT}/vger_get_marc_ids_by_date.pl ${MARCFILE} ${STARTDATE} ${ENDDATE} >> ${IDFILE}
-#    ${BIN}/marcview ${DELFILE} | grep "^001" | cut -d":" -f2 > ${IDFILE}
-#    ${BIN}/marcview ${MARCFILE} | grep "^001" | cut -d":" -f2 >> ${IDFILE}
 
     # Build a SQL script of delete commands; initial FEEDBACK OFF suppresses unneeded output
     echo "set feedback off" > ${IDSQLFILE}
