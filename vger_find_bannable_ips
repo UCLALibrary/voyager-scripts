@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Parses apache log file to find IP addresses which are
+# sending too many search requests, and writes them to
+# a log file which can be acted on by fail2ban.
+#
+# Assume this runs once/minute via cron
+
+# Requires GNU date (standard on our RHEL server)
+# Get date/time in apache log format, ignoring seconds, like: 20/Oct/2016:11:27
+# Using 1 minute for now; could support longer interval via loop
+INTERVAL=1	# Minutes ago
+TIME_TO_CHECK=`date --date="${INTERVAL} minutes ago" "+%d/%b/%Y:%H:%M"`
+
+APACHE_LOG=/m1/shared/apache2/logs/ucladb_vwebv/access_log
+
+SEARCH_STRING="searchCode=ISBN"
+THRESHOLD=5	# Searches allowed during INTERVAL
+
+### Override variables for testing ###
+#TIME_TO_CHECK="19/Oct/2016:01:31"
+#APACHE_LOG=/m1/shared/apache2/logs/ucladb_vwebv/access_log-20161020
+### End override for testing ###
+
+# Check log entries for TIME_TO_CHECK, for SEARCH_STRING.
+# Count unique IP addresses and print any occurring more than THRESHOLD times.
+# Output format: 3 fields
+# 1) IP address
+# 2) number of occurrences
+# 3) Current time, in full apache log format, to make fail2ban happy.
+
+TIME_NOW=`date "+%d/%b/%Y:%H:%M:%S -0700"`
+
+grep ${TIME_TO_CHECK} ${APACHE_LOG} | grep ${SEARCH_STRING} \
+  | awk '{print $1}' | sort | uniq -c \
+  | awk -v THRESHOLD="${THRESHOLD}" -v TIME_NOW="${TIME_NOW}" '($1 > THRESHOLD) {print $2, $1, TIME_NOW}'
+
