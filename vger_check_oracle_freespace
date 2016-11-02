@@ -3,5 +3,7 @@
 # Get voyager environment, for vars and for cron
 . `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
-# Meant to be called by userid oracle, with full login environment
-sqlplus -S '/ as sysdba' @${VGER_SCRIPT}/vger_check_oracle_freespace.sql
+# Get ucladb USERPASS credentials, which have necessary rights.
+. /m1/voyager/ucladb/ini/voyager.env
+
+sqlplus -S ${USERPASS} @${VGER_SCRIPT}/vger_check_oracle_freespace.sql
