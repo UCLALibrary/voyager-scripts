@@ -29,7 +29,7 @@ THRESHOLD=5	# Searches allowed during INTERVAL
 # 2) number of occurrences
 # 3) Current time, in full apache log format, to make fail2ban happy.
 
-TIME_NOW=`date "+%d/%b/%Y:%H:%M:%S -0700"`
+TIME_NOW=`date "+%d/%b/%Y:%H:%M:%S %z"`
 
 grep ${TIME_TO_CHECK} ${APACHE_LOG} | grep ${SEARCH_STRING} \
   | awk '{print $1}' | sort | uniq -c \
