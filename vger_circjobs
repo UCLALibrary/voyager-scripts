@@ -77,7 +77,7 @@ ${DIR}/sbin/Pcircjob -j19 -s${YESTERDAY} -e${TODAY}
 # Quarter-specific dates, as requested by CSC
 # Fall 2008+: per CV, only turn on lists automatically the first two weeks of the quarter
 # Job 34 (turn on reserve lists)
-START=20170119
+START=20170109
 END=20170325
 case $TODAY in
   20170109)  ${DIR}/sbin/Pcircjob -j34 -s$START -e$END ;;
