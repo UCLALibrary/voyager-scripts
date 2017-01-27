@@ -67,7 +67,7 @@ STATE_WARNING=1
 STATE_ERROR=2
 
 # Report problems if a tablespace is more than this percentage full
-THRESHOLD=95
+THRESHOLD=97
 
 # Assume all's good until proven otherwise
 RETURN_CODE=${STATE_OK}
