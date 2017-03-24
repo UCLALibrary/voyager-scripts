@@ -1,0 +1,102 @@
+#!/bin/sh
+
+# Overdue/hold/recall notices multiple times per day, run by userid voyager
+
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+# Each Voyager training and production db has its own scripts directory
+# Script names begin with T for training and P for production
+# Voyager and Oracle must be up
+case `hostname` in
+wells|p-w-voyager01 )
+    SERVER=prod                 # production server
+
+    # Run jobs for ucladb, but not for any other database
+    # 12 Jul 2004 add ethnodb filmntvdb ucladb
+    # 13 Jul 2004 disable ethnodb and filmntvdb
+    # ${VGER_SCRIPT}/vger_daily will take care of rotating logs
+    DIR=$VGER_BASE/ucladb
+    ;;
+butler|collins )
+    SERVER=test                 # test server
+
+    echo "$0: this script can run only on the production server"
+    exit 1
+    ;;
+* )
+    echo "$0: this script can run only on a Voyager server"
+    exit 1
+    ;;
+esac
+
+# Variable to identify winter closure period
+NON_CLOSURE=`${DIR}/local/circ/bin/non_closure`
+
+
+# Run Circjob 2 (Overdue Notices), 3 (Recall Notices),
+# Circjob5 (Hold Recall Available Notices), 
+# Circjob 6 (Hold Recall Cancelled Notices)
+for JOB in 2 3 5 6
+do
+    ${DIR}/sbin/Pcircjob -j$JOB
+done
+
+RPTDIR=${DIR}/rpt
+if [ ${NON_CLOSURE} = "True" ]; then
+  for FILE in `ls $RPTDIR/crcnotes.*.inp 2>/dev/null`; do
+    cp -p $FILE $FILE.bak
+    # 1) Filter out notices of type 00 (request cancellation notices)
+    # 2) Filter out notices of type 06 (fee/fine statements) with email addresses 
+    # 3) Filter out notices with blank addresses and blank email addresses (from HOLD MAIL)
+    # 4) Remove email addresses (field 3) for notices of type 05 (fee/fine notices)
+    grep -v "^00" $FILE.bak \
+      | grep -v "^06|97.2|[^|]" \
+      | grep -v "^06|09.1|[^|]" \
+      | grep -v "^[0-9][0-9]|[^|]*||[^|]*|[^|]*|[^|]*|[^|]*||" \
+      | sed "s/^\(05|[^|]*|\)[^|]*|/\1|/" \
+      > $FILE
+
+    # put email fee/fine statements (type 06, with content in 3rd field) in separate files
+    # 2009-04-13 drickard: modified the EMAILFILE value to distinguish feefine & general circ notices
+    EMAILFILE=${FILE}_feefine_${TODAY}.email
+    grep "^06|97.2|[^|]" $FILE.bak > ${EMAILFILE}
+    grep "^06|09.1|[^|]" $FILE.bak > ${EMAILFILE}
+    if [ ! -s ${EMAILFILE} ]; then
+        rm ${EMAILFILE}
+    fi
+
+    # 2009-04-13 drickard: added code to generate circ-notice email file
+    # select all entries with email (content in 3rd field) into separate file for emailing notices
+    EMAILFILE=${FILE}_circ_${TODAY}.email
+    grep "^[0-9][0-9]|97.2|[^|]" $FILE > ${EMAILFILE}
+    grep "^[0-9][0-9]|09.1|[^|]" $FILE > ${EMAILFILE}
+    if [ ! -s ${EMAILFILE} ]; then
+        rm ${EMAILFILE}
+    fi
+
+   # 2009-04-13 drickard: added code to identify print-only notices (no content in 3rd field)
+    NOMAILFILE=${FILE}.nomail
+    grep -v "^[0-9][0-9]|97.2|[^|]" $FILE > ${NOMAILFILE}
+    grep -v "^[0-9][0-9]|09.1|[^|]" $FILE > ${NOMAILFILE}
+    if [ -s ${NOMAILFILE} ]; then
+        mv ${NOMAILFILE} ${FILE}
+    else
+        rm ${NOMAILFILE}
+        rm ${FILE}
+    fi
+
+  done
+else
+  echo "Not processing circ notices during winter closure"
+fi
+
+if [ ${NON_CLOSURE} = "True" ]; then
+  ${VGER_SCRIPT}/vger_email_circ_notices
+else
+  echo "Not mailing circ notices during winter closure"
+fi
+
+# 2009-04-15 drickard: clear out sent email files every quarter
+find ${DIR} -type f -name 'crcnotes.*.inp_circ_*.email.sent' -mtime +90 -exec rm {} \;
+
