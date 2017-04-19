@@ -137,7 +137,7 @@ for DB in ${DBLIST}; do
     # Get the record ids from the 001 fields
     echo -e "\n`date` Removing subfields for deleted records..."
     ${VGER_SCRIPT}/vger_get_marc_ids_by_date.pl ${DELFILE} ${STARTDATE} ${ENDDATE} > ${IDFILE}
-    echo -e "\n`date` Removing subfields for deleted records..."
+    echo -e "\n`date` Removing subfields for updated records..."
     ${VGER_SCRIPT}/vger_get_marc_ids_by_date.pl ${MARCFILE} ${STARTDATE} ${ENDDATE} >> ${IDFILE}
 
     # Build a SQL script of delete commands; initial FEEDBACK OFF suppresses unneeded output
