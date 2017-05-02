@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+# For logging
+echo "===================="
+date
+
+# Run circjob to transform requests in database into files on disk.
+/m1/voyager/ucladb/sbin/Pcircjob -j26
+
+# Creates these files
+# /m1/voyager/ucladb/rpt/opacrequests.OE_LN.out
+# /m1/voyager/ucladb/rpt/opacrequests.OE_PH.out
+
+# Run perl script to process requests and send formatted email to CDL.
+DIR=/m1/voyager/ucladb/rpt
+for REQUEST_FILE in ${DIR}/opacrequests.OE_*.out; do
+  if [ -s ${REQUEST_FILE} ]; then
+    echo "Processing ${REQUEST_FILE}..."
+    TIMESTAMP=`date "+%Y%m%d%H%M%S"`  ### YYYYMMDDHH24MISS
+    /m1/voyager/ucladb/local/docdeli/new_docdeli.pl ${REQUEST_FILE} >> ${DIR}/transactions.txt.${TIMESTAMP}
+    mv ${REQUEST_FILE} ${REQUEST_FILE}.${TIMESTAMP}
+  fi
+done
+
+# Clean up old transaction log files; keep request files until they are expired by logrotate.
+## Anything more than 14 days old
+find /m1/voyager/ucladb/rpt -type f -name "transactions.txt.*" -mtime +14 -exec rm {} \;
+## Any empty files older than today
+find /m1/voyager/ucladb/rpt -type f -name "transactions.txt.*" -mtime +0 -size 0 -exec rm {} \;
+  
