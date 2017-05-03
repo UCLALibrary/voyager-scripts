@@ -32,8 +32,6 @@ ${SBIN}/Pfpc_run
 echo `date`
 echo "Restoring access to acq..."
 chmod 750 ${SBIN}/Pacqsvr
-# If any clients tried connecting while down, acqsvr is in maintenance mode - clear it
-/usr/sbin/svcadm clear ucladb/Pacqsvr
 
 echo "Done!"
 
