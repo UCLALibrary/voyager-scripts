@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Checks status of critical Oracle / Voyager / Apache SMF services.
+# Can be used in other scripts to keep them from running if something's not up.
+
+# Define Nagios return codes
+STATE_OK=0
+STATE_WARNING=1
+STATE_ERROR=2
+
+# Check specific service if requested, else check all critical services.
+if [ -z "$1" ]; then
+  REQ_SERVICES=ALL
+else
+  REQ_SERVICES=$1
+fi
+
+case ${REQ_SERVICES} in
+  apache) SERVICES="httpd2" ;;
+  cognos) SERVICES="olisten MRDN" ;;
+  oracle) SERVICES="olisten VGER" ;;
+  voyager) SERVICES="Global_bin" ;;
+  ALL) SERVICES="olisten MRDN VGER Global_bin httpd2" ;;
+  *) SERVICES=${REQ_SERVICES} ;;
+esac
+
+# Assume all's good until proven otherwise
+RETURN_CODE=${STATE_OK}
+RETURN_MESSAGE=
+
+for SVC in ${SERVICES}; do
+  STATUS=`svcs -H -o state ${SVC}`
+  if [ "${STATUS}" != "online" ]; then
+    RETURN_CODE=${STATE_ERROR}
+    RETURN_MESSAGE="${RETURN_MESSAGE}${SVC} is ${STATUS} *** "
+  fi
+done
+
+if [ ! -z "${RETURN_MESSAGE}" ]; then
+  echo "${RETURN_MESSAGE}"
+else
+  echo "All services are online"
+fi
+exit ${RETURN_CODE}
+
