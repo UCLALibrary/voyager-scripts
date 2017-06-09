@@ -42,6 +42,8 @@ do
     ${DIR}/sbin/Pcircjob -j$JOB
 done
 
+TODAY=`date "+%Y%m%d%H%M%S"`
+
 RPTDIR=${DIR}/rpt
 if [ ${NON_CLOSURE} = "True" ]; then
   for FILE in `ls $RPTDIR/crcnotes.*.inp 2>/dev/null`; do
