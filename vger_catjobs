@@ -44,7 +44,7 @@ case $DB in
   ucla )
     DB=ucladb
     # 31 Aug 2006 Need fully-qualified email address unless in /etc/aliases
-    MAILTO="lit-libweb@library.ucla.edu mariscal@library.ucla.edu ppriebe@library.ucla.edu"
+    MAILTO="lit-libweb@library.ucla.edu ppriebe@library.ucla.edu"
     ;;
  * )
     _Usage
