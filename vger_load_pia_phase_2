@@ -31,7 +31,7 @@ cat ${BIBLIST} | while read BIBID VENDOR ACCOUNT; do
             MAILTO="lentz@law.ucla.edu spadoni@law.ucla.edu"
           else # All others are for Kinross Acq
             PROFILE=PIAYBP2
-            MAILTO="bnavarre@library.ucla.edu fappel@library.ucla.edu"
+            MAILTO="mono-acq@library.ucla.edu fappel@library.ucla.edu"
           fi
           ;;
     *   ) echo "ERROR: unsupported vendor ${VENDOR} - skipping"
