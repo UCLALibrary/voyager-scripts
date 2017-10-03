@@ -170,10 +170,6 @@ if [ ${DOM} -eq 1 ]; then
     ${VGER_SCRIPT}/vger_circ_stats_export
 fi
 
-# 2005-01-11 akohler: every day, generate file of course reserves data for outside consumption
-#   Related to circjob 34
-${VGER_SCRIPT}/vger_extract_reserves_data
-
 # 2009-03-23 drickard: starting ca. 6 April, will auto-generate circulation email notices
 # 2009-11-19 drickard: adding logic to not mail during closure, modeled on logic from vger_bar
 if [ ${NON_CLOSURE} = "True" ]; then
