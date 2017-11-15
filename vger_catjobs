@@ -19,7 +19,7 @@ case `hostname` in
 p-w-voyager01|wells )
     SERVER=production			# production server
     ;;
-p-w-voyager01|collins )
+t-w-voyager01|collins )
     SERVER=test				# test server
     ;;
 * )
