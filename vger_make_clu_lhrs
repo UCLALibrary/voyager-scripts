@@ -76,26 +76,26 @@ done
 ${BIN}/marcsplit -c lhrs_internet.mrc
 ${BIN}/marcsplit -c lhrs_physical.mrc
 
-# Combine LHR files into file named for OCLC and generate LABEL file(s)
-PROJECT=P011764
+# Combine LHR files into file named for OCLC
 YYMMDD=`date "+%y%m%d"`
-cat lhrs_internet.mrc lhrs_physical.mrc > DATA.D${YYMMDD}
-${VGER_SCRIPT}/vger_make_oclc_label_files ${PROJECT}
+COLLECTION_ID=1018200
+SYMBOL=CLU
+OCLCFILE=${COLLECTION_ID}.${SYMBOL}.${DATE}.mrc
+cat lhrs_internet.mrc lhrs_physical.mrc > ${OCLCFILE}
 
-# FTP the files to OCLC
-USER=tclu1
+# FTP the file to OCLC
+USER=clu
 PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
 (
   echo "user ${USER} ${PASSWORD}"
-  echo "cd 'edx.ebsb.clu.ftp'"
+  echo "cd /metacoll/in/lhr"
   echo "bin"
-  echo "mput DATA*"
-  echo "mput LABEL*"
+  echo "put ${OCLCFILE}"
   echo "dir"
   echo "quit"
-) | ftp -i -n -v edx.oclc.org
+) | ftp -i -n -v ftp2.oclc.org
 
 ## Cleanup
-mv ${DIR}/DATA* ${DIR}/LABEL* ${DIR}/archive/
+mv ${DIR}/${OCLCFILE} ${DIR}/archive/
 rm ${DIR}/*.out ${DIR}/log.exp.* ${DIR}/*.mrc
 
