@@ -80,7 +80,7 @@ ${BIN}/marcsplit -c lhrs_physical.mrc
 YYMMDD=`date "+%y%m%d"`
 COLLECTION_ID=1018200
 SYMBOL=CLU
-OCLCFILE=${COLLECTION_ID}.${SYMBOL}.${DATE}.mrc
+OCLCFILE=${COLLECTION_ID}.${SYMBOL}.${YYMMDD}.mrc
 cat lhrs_internet.mrc lhrs_physical.mrc > ${OCLCFILE}
 
 # FTP the file to OCLC
