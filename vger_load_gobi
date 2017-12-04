@@ -99,7 +99,7 @@ for LOADFILE in *.mrc; do
       # Everything else is regular Gobi orders
       *) 
         PROFILE=GOBI
-        CONTACTS="on-order@library.ucla.edu lit-libweb@library.ucla.edu"
+        CONTACTS="mono-acq@library.ucla.edu lit-libweb@library.ucla.edu"
         ### Uncomment this section vvvv during fiscal close
         # echo "${LOADFILE} NOT LOADED DURING FISCAL CLOSE"
         # if [ ! -d pending ]; then mkdir pending; fi

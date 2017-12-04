@@ -77,7 +77,7 @@ for ORDFILE in *.abc; do
 
     # Email relevant log info from all of the resulting logs to specific users
     grep -h "Purchase Order Number" *.log | grep -v "check log" | mailx -s "HAR loaded ${ORDFILE}" \
-      on-order@library.ucla.edu lit-libweb@library.ucla.edu
+      mono-acq@library.ucla.edu lit-libweb@library.ucla.edu
 
     # Move files into the archive
     mv ${BIGBASEFILE}* ${DIR}/archive

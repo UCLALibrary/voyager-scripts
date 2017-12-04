@@ -77,7 +77,7 @@ cat ${DIR}/casalini_credentials | \
     # If ORDFILE was created, split into smaller files for loading
     if [ -s ${ORDFILE} ]; then
       PROFILE=CASALINI
-      CONTACTS="on-order@library.ucla.edu lit-libweb@library.ucla.edu"
+      CONTACTS="mono-acq@library.ucla.edu lit-libweb@library.ucla.edu"
 
       # Acq staff want smaller POs, so split files into chunks of MAXSIZE
       MAXSIZE=30
