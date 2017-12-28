@@ -51,7 +51,7 @@ fi
 #$JAVA -jar $DATAJARFILE $PROPSFILE
 #$JAVA -jar $JARFILE $PROPSFILE
 J=${VGER_JAVA}
-CLASSPATH=$J/spring.jar:$J/oracle.jar:$J/commons.jar:$J/jdom.jar:$J/rome-0.8.jar
+CLASSPATH=$J/spring.jar:$J/ojdbc7.jar:$J/commons.jar:$J/jdom.jar:$J/rome-0.8.jar
 
 $JAVA -cp $CLASSPATH:$DATAJARFILE edu.ucla.library.libservices.beans.FeedDataBuilder $PROPSFILE
 $JAVA -cp $CLASSPATH:$JARFILE edu.ucla.library.libservices.beans.FeedBuilder $PROPSFILE
