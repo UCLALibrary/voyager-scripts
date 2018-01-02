@@ -8,7 +8,7 @@
 JAVA=${BIN}/java
 JAVADIR=${VGER_JAVA}
 PROPERTIES_FILE=${JAVADIR}/aeon.properties
-CLASSPATH=${JAVADIR}/aeonPaging.jar:${JAVADIR}/jersey/*:${JAVADIR}/commons.jar:${JAVADIR}/jsch-0.1.51.jar:${JAVADIR}/log4j-1.2.15.jar:${JAVADIR}/mimepull.jar:${JAVADIR}/oracle.jar:${JAVADIR}/spring.jar:${JAVADIR}/activation.jar:${JAVADIR}/mail.jar
+CLASSPATH=${JAVADIR}/aeonPaging.jar:${JAVADIR}/jersey/*:${JAVADIR}/commons.jar:${JAVADIR}/jsch-0.1.51.jar:${JAVADIR}/log4j-1.2.15.jar:${JAVADIR}/mimepull.jar:${JAVADIR}/ojdbc7.jar:${JAVADIR}/spring.jar:${JAVADIR}/activation.jar:${JAVADIR}/mail.jar
 
 ${JAVA} -cp ${CLASSPATH} edu.ucla.library.libservices.aeon.callslip.main.ProcessCallslip  ${PROPERTIES_FILE}
 
