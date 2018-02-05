@@ -4,7 +4,7 @@
 . `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
 JAVA=${BIN}/java
-CLASSPATH=${VGER_JAVA}/ojdbc14.jar:${VGER_JAVA}/vapi-core.jar:${VGER_JAVA}/vapi-client-2015.jar:${VGER_JAVA}/pocanceller.jar
+CLASSPATH=${VGER_JAVA}/ojdbc7.jar:${VGER_JAVA}/vapi-core.jar:${VGER_JAVA}/vapi-client-2015.jar:${VGER_JAVA}/pocanceller.jar
 PROGRAM=edu.ucla.library.libservices.voyager.PoCanceller
 PROPFILE=${VGER_JAVA}/pocanceller.properties
 
