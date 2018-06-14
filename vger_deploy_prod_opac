@@ -6,6 +6,12 @@
 # Get voyager environment, for vars and for cron
 . `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
 
+# Must run only on production server
+if [ "p-w-voyager01" != `/bin/hostname` ]; then
+  echo "ERROR: Must be run only on production Voyager server - exiting"
+  exit 1
+fi
+
 # Must be run as voyager
 if [ "voyager" != `/usr/bin/whoami` ]; then
   echo "ERROR: User must be voyager - exiting"
