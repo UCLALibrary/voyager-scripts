@@ -29,6 +29,7 @@ _clear_variables() {
 if [ -z "$1" ]; then
   echo "Usage: source (or .) vger_git_config user (e.g., akohler or drickard1967)"
   _clear_variables
+  return 1
 else
   VGER_GIT_USER=$1
 
@@ -61,6 +62,7 @@ else
     *)
       echo "Invalid user ${VGER_GIT_USER} - exiting"
       _clear_variables
+	  return 1
       ;;
   esac
 
