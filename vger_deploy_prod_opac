@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# Deploy production OPAC files from GitHub.
+# TODO: Works for ucladb (cattest -> catalog); expand to other databases
+
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+# Must be run as voyager
+if [ "voyager" != `/usr/bin/whoami` ]; then
+  echo "ERROR: User must be voyager - exiting"
+  exit 1
+fi
+
+# All work happens here
+DIR=/m1/voyager/ucladb/tomcat/vwebv/context/vwebv/ui/ucladb
+cd ${DIR}
+if [ ${DIR} != `pwd` ]; then
+  echo "ERROR: Unable to cd to ${DIR} - exiting"
+  exit 1
+fi
+
+# Since we don't have a generic voyager github user, and
+# the voyager os user is shared, we map a real user to voyager
+# for git/github usage.  Expect this via the first parameter.
+if [ -z "$1" ]; then
+  echo "ERROR: Unknown git user - exiting"
+  echo "Usage: $0 git_user (akohler or drickard)"
+  exit 1
+else
+  GIT_USER=$1
+fi
+# Now setup the git enviroment, exiting if it fails.
+source ${VGER_SCRIPT}/vger_git_config ${GIT_USER}
+RET_CODE=$?
+if [ ${RET_CODE} -ne 0 ]; then
+  echo "ERROR: Git setup failed with ${GIT_USER} - exiting"
+  exit 1
+fi
+
+# Make sure we're on the master branch.
+git checkout master
+
+# Show current status of local working copy.
+# Expect to see unstaged files, which are due to TEST/PROD environment differences.
+# These are OK and will be handled shortly.
+git status
+
+# Restore the local working copy to a clean status before pulling code.
+git checkout -- .
+
+# Pull from GitHub
+git pull
+
+# Change local files from default test environment to production environment.
+find . -type f | xargs grep -l webservices-test | xargs sed -i 's/webservices-test/webservices/g'
+
+# Show diff with minimal context to log what was updated in previous step.
+git diff -U0
+
+
