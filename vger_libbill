@@ -1,0 +1,70 @@
+#!/bin/sh
+
+############################################################
+# Send Voyager fine/fee information to LibBill and post in 
+# Voyager.
+#
+# Last revised: 2018-07-18 drickard
+############################################################
+
+_show_usage() {
+  echo -e "\nUSAGE:"
+  echo "$0"
+  exit 1
+}
+
+########################################
+# Main routine starts here
+
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+DIR=/m1/voyager/ucladb/local/circ
+
+VGER_BILL_PATH=$DIR/post_libbill_trans
+JAVA=${BIN}/java
+JAVADIR=${VGER_JAVA}
+CLASSPATH=${JAVADIR}/libbill.jar:${JAVADIR}/commons.jar:${JAVADIR}/vgerLibBill.jar:${JAVADIR}/ojdbc7.jar:${JAVADIR}/spring.jar:${JAVADIR}/commons-lang-2.6.jar:${JAVADIR}/log4j-1.2.15.jar
+PROPERTIES_FILE=${JAVADIR}/libbill.properties
+
+# No input parameters are necessary. 
+# If any are provided show usage and exit.
+if [ -n "$1" ]; then
+  _show_usage
+  exit
+fi
+
+echo "***** Begin daily LibBill process. *****"
+
+# export faculty fines/fees into LibBill
+echo "processing faculty/staff fines"
+${JAVA} -classpath ${CLASSPATH} edu.ucla.library.libservices.webservices.invoices.vger.main.FineFeeProcessor ${PROPERTIES_FILE}
+
+if [ -s "${DIR}/post_libbill_trans" ]; then
+  POST_CHARGES=`wc -l ${DIR}/post_libbill_trans | cut -f1 -d' '`
+  echo "Posting ${POST_CHARGES} new charges to Voyager."
+  ${VGER_SCRIPT}/vger_addfeepost ${DIR}/post_libbill_trans ${DIR}/post_libbill_trans.err
+  mv ${DIR}/post_libbill_trans ${DIR}/post_libbill_trans.`date "+%Y%m%d"`
+else
+  echo "No new charges to post to Voyager."
+fi
+
+# forgive returned items
+/m1/voyager/ucladb/local/circ/bin/forgive_libill_returns
+
+# update faculty/staff refunds in LibBill
+echo "processing faculty/staff refunds"
+${JAVA} -classpath ${CLASSPATH} edu.ucla.library.libservices.webservices.invoices.vger.main.RefundProcessor ${PROPERTIES_FILE}
+
+if [ -s "${DIR}/update_libbill_refunds.sql" ]; then
+  POST_REFUNDS=`wc -l ${DIR}/update_libbill_refunds.sql | cut -f1 -d' '`
+  echo "Posting ${POST_REFUNDS} new refunds to LibBill."
+  ${VGER_SCRIPT}/vger_sqlplus_run ucladb ${DIR}/update_libbill_refunds
+  
+  if [ -s "${DIR}/update_libbill_refunds.out" ]; then
+    echo "*** Error: Check $DIR/update_libbill_refunds.out ***" ;
+    exit
+  fi
+else
+  echo "No new refunds to post to LibBill."
+fi
