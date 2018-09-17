@@ -18,6 +18,8 @@ echo `date`: Finished snapshots
 
 echo `date`: Start oracle, voyager and apache
 /etc/init.d/dbora start
+# If needed, rebuild the Oracle temp tablespace for the VGER instance
+su - oracle -c "${VGER_SCRIPT}/vger_rebuild_temp_tablespace" 2>&1
 /etc/init.d/voyager start
 /etc/init.d/httpd2 start
 
