@@ -59,6 +59,11 @@ done
 # been paid or credited.
 ${VGER_SCRIPT}/vger_bar
 
+# Run the process that sends faculty/staff fines to LibBill
+# and updates in Voyager which of those fines have
+# been invoiced or credited.
+${VGER_SCRIPT}/vger_libbill
+
 # Run various other Voyager circ jobs
 for JOB in 3 4 5 6 7 8 24
 do
