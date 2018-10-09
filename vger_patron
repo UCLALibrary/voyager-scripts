@@ -73,7 +73,11 @@ ${VGER_SCRIPT}/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/brui
 ${VGER_SCRIPT}/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/fsemail_data.txt /m1/voyager/ucladb/local/patron/fsemail_data.ctl
 
 # Load daily QDB data.
-${VGER_SCRIPT}/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/qdb_data.txt /m1/voyager/ucladb/local/patron/qdb_data.ctl
+# made obsolete by UCPath switch
+#${VGER_SCRIPT}/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/qdb_data.txt /m1/voyager/ucladb/local/patron/qdb_data.ctl
+
+# Load daily UCPath data.
+${VGER_SCRIPT}/vger_sqlldr_load vger_report /m1/voyager/ucladb/local/patron/ucpath_data.txt /m1/voyager/ucladb/local/patron/ucpath_data.ctl
 
 # Run the procedures that create the SIF records in the database table
 # Run the procedures that create the SIF records in the database table
