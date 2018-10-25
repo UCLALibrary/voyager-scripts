@@ -24,6 +24,7 @@ _create_ctl_file() {
   CTLFILE=${OUTDIR}/${TABLE}.ctl
   # Create control file for loading into oracle
   (
+	echo "OPTIONS (ERRORS=99999)"
     echo "LOAD DATA"
     echo "CHARACTERSET UTF8"
     echo "APPEND"
