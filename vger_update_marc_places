@@ -1,0 +1,36 @@
+#!/bin/bash
+# Retrieves the official LC place list and updates our database table with authorized codes & names.
+
+BASE=/tmp/lc_places
+XML=${BASE}.xml
+CODES=${BASE}_codes.txt
+NAMES=${BASE}_names.txt
+COMBINED=${BASE}_combined.txt
+CTL=${BASE}.ctl
+
+curl -s http://www.loc.gov/standards/codelists/countries.xml > ${XML}
+
+# TODO: Add check of contents; Cloudflare might interfere
+
+# TODO: Rewrite using xmllint/xpath?  Defeated me, so grep & sed to the rescue.
+grep '<code>' ${XML} | grep -oE '>[^<].*<' | sed "s/[<>]//g" > ${CODES}
+grep '<name authorized="yes">' ${XML} | grep -oE '>[^<].*<' | sed "s/[<>]//g" > ${NAMES}
+
+# Combine the two single-column files into one tab-delimited: code<tab>name
+paste ${CODES} ${NAMES} > ${COMBINED}
+
+# Create Oracle loader controlfile on the fly
+(
+  echo "LOAD DATA"
+  echo "TRUNCATE"
+  echo "INTO TABLE vger_support.marc_place_codes"
+  echo "FIELDS TERMINATED BY x'09'"
+  echo "TRAILING NULLCOLS"
+  echo "(code, name)"
+) > ${CTL}
+
+# Load combined data into existing Oracle table
+${VGER_SCRIPT}/vger_sqlldr_load vger_support ${COMBINED} ${CTL}
+
+# Cleanup
+rm ${BASE}*
