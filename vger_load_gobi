@@ -20,7 +20,7 @@ for USER in UCLA uclacl; do
 
   # Get current list of MARC files (*.ord) on FTP server; we don't care
   #  about textual *.cnt files, which have the number of records in corresponding *.ord files
-  curl -s -l ftp://${USER}:${PASSWORD}@${SITE}/${FTPDIR}/ | grep "\.ord$" > ${NEWLIST}
+  curl -s -l ftp://${USER}:${PASSWORD}@${SITE}/${FTPDIR}/ | grep "\.ord$" | sort > ${NEWLIST}
 
   # Bail out if OLDLIST doesn't have content
   if [ ! -s ${OLDLIST} ]; then
