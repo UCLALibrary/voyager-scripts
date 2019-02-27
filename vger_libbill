@@ -34,7 +34,9 @@ if [ -n "$1" ]; then
   exit
 fi
 
+echo ""
 echo "***** Begin daily LibBill process. *****"
+echo ""
 
 # export faculty fines/fees into LibBill
 echo "processing faculty/staff fines"
@@ -68,3 +70,5 @@ if [ -s "${DIR}/update_libbill_refunds.sql" ]; then
 else
   echo "No new refunds to post to LibBill."
 fi
+
+echo ""
