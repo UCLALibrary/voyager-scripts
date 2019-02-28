@@ -29,7 +29,7 @@ PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/harrassowitz_credentials ${
 (
   echo "user ${USER} ${PASSWORD}"
   echo "bin"
-  echo "mget ${DATE}*"
+  echo "mget ${DATE}*.mrc"
   echo "quit"
 ) | ftp -n -i -v ftp.harrassowitz.de
 
