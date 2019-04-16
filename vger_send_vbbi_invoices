@@ -21,7 +21,13 @@ ${VGER_SCRIPT}/vger_sqlplus_run vger_support vbbi_invoices
 if [ -s ${OUTFILE} ]; then
   mv ${OUTFILE} ${LIBNAME}
   # Get some stats, basic error checking
+  # Pull invoice totals from each Z20 line 2 and add them up
+  TOTAL=`grep -o -E "^Z200102 [0-9]{15}" ${LIBNAME} | cut -d" " -f2 | paste -sd+ | bc`
+  # Totals are in cents, so divide to get dollars
+  TOTAL=`echo ${TOTAL} / 100 | bc -l`
+
   echo Invoices: `grep "^Z25" ${LIBNAME} | wc -l`
+  printf "Total: %.2f\n" ${TOTAL}
   echo Errors  : `egrep -v "^Z20|^Z21|^Z25|^Z41" ${LIBNAME} | wc -l`
   (
     echo "user ${USER} ${PASSWORD}"
