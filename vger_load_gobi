@@ -93,8 +93,13 @@ for LOADFILE in *.mrc; do
         ;;
       # Account 09 is e-books, managed by Roxanne Peck
       09*)
-	PROFILE=GOBI
-	CONTACTS="rrivero@library.ucla.edu sclermmaint@library.ucla.edu lit-libweb@library.ucla.edu"
+        PROFILE=GOBI
+        CONTACTS="rrivero@library.ucla.edu sclermmaint@library.ucla.edu lit-libweb@library.ucla.edu"
+        ;;
+      # Account 54 is Arts e-books, managed by Janine Henri
+      54*)
+        PROFILE=GOBI
+        CONTACTS="sclermmaint@library.ucla.edu lit-libweb@library.ucla.edu"
         ;;
       # Everything else is regular Gobi orders
       *) 
