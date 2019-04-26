@@ -148,7 +148,14 @@ cat ${CONFIG}/edi_invoice_sources.lst | \
 	#
 	# 2006-10-04 akohler: vendors all seem to keep files on their ftp sites for 6 months or less
 	#   so now globally deleting EDI invoice files older than 210 days, via vger_daily
-        MAXDAYS=30
+
+		# Keep HAR files for longer, because of shelf-ready 3rd-party vendor (VBT-1275)
+		if [ ${VENDOR} = "HAR" ]; then
+          MAXDAYS=60
+		else
+          MAXDAYS=30
+		fi
+
         ISITOLD=`find ${VENDOR} -name ${FILE} -mtime +${MAXDAYS}`
         if [ -n "${ISITOLD}" ]; then
           if [ -f ${SYMFILE} ]; then
