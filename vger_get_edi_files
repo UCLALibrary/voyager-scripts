@@ -151,7 +151,7 @@ cat ${CONFIG}/edi_invoice_sources.lst | \
 
 		# Keep HAR files for longer, because of shelf-ready 3rd-party vendor (VBT-1275)
 		if [ ${VENDOR} = "HAR" ]; then
-          MAXDAYS=60
+          MAXDAYS=90
 		else
           MAXDAYS=30
 		fi
