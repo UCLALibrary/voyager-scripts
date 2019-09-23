@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# script for handling SRLF paging requests from SC Aeon
+
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+JAVA=${BIN}/java
+JAVADIR=${VGER_JAVA}
+FILEDIR=/m1/voyager/ucladb/local/patron/
+PROPERTIES_FILE=${JAVADIR}/voyager.properties
+STUDENTS_FILE=${FILEDIR}/geffen_data.txt
+CLASSPATH=${JAVADIR}/geffenLoad.jar:${JAVADIR}/log4j-1.2.15.jar:${JAVADIR}/ojdbc7.jar:${JAVADIR}/spring.jar:${JAVADIR}/commons-beanutils-1.6.jar:${JAVADIR}/commons-collections-3.2.1.jar:${JAVADIR}/commons-digester-1.8.jar:${JAVADIR}/commons-lang-2.6.jar:${JAVADIR}/commons-logging-1.2.jar:${JAVADIR}/vapi-client.jar:${JAVADIR}/vapi-core.jar
+
+${JAVA} -cp ${CLASSPATH} edu.ucla.library.libservices.geffen.main.Loader  ${PROPERTIES_FILE} ${STUDENTS_FILE}
+
+

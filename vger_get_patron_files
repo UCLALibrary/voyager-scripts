@@ -18,6 +18,13 @@ cd ${DIR}
   echo "bye"
 ) | sftp bcard@bc-sftp.library.ucla.edu
 
+# 20190920 drickard new pull for geffen students	
+(
+  echo "cd /onecard"
+  echo "get Geffen_Students.txt geffen_data.txt"
+  echo "bye"
+) | sftp bcard@bc-sftp.library.ucla.edu
+
 # Faculty and staff email addresses
 ## extra logic to handle server switch coming 20130223 drickard
 USER=ext_dir_ret9
