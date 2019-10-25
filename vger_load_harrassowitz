@@ -53,15 +53,16 @@ for LOADFILE in *.mrc; do
       mv discard.imp.${LOADFILE}.bulk ${BASEFILE}.rej.mrc
     fi
 
+    # Email relevant log info from all of the resulting logs to specific users
+    grep -h "Purchase Order Number" *.log | grep -v "check log" | mailx -s "HAR loaded ${LOADFILE}" \
+      mono-acq@library.ucla.edu lit-libweb@library.ucla.edu
+
+    # Move files into the archive
+    mv ${BASEFILE}* ${DIR}/archive
+  
   fi # -f ${LOADFILE}
 done # ${LOADFILE}
 
-# Email relevant log info from all of the resulting logs to specific users
-grep -h "Purchase Order Number" *.log | grep -v "check log" | mailx -s "HAR loaded ${LOADFILE}" \
-  mono-acq@library.ucla.edu lit-libweb@library.ucla.edu
-
-# Move files into the archive
-mv ${BASEFILE}* ${DIR}/archive
 
 # Remove archived files older than 180 days
 find ${DIR}/archive -type f -mtime +180 -exec rm {} \;
