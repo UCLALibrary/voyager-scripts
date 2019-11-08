@@ -72,3 +72,15 @@ else
 fi
 
 echo ""
+
+# suspend faculty/staff with more than $100 unpaid fines/fees
+${VGER_SCRIPT}/vger_sqlplus_run vger_support $DIR/suspend_libbill
+if [ -s "$DIR/suspend_libbill.out" ]; then
+  SUSPENDED_PATRONS=`wc -l $DIR/suspend_libbill.out | cut -f1 -d' '`
+  echo "Suspending $SUSPENDED_PATRONS patrons with more than max outstanding LibBill charges."
+  ${VGER_SCRIPT}/vger_susp $DIR/suspend_libbill.out $DIR/suspend_libbill.err
+  mv $DIR/suspend_libbill.out $DIR/suspend_libbill.out.`date "+%Y%m%d"`
+else
+  echo "No patrons with max outstanding BAR charges to suspend."
+fi
+
