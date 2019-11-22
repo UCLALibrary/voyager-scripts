@@ -106,7 +106,6 @@ cat ${CONFIG}/edi_invoice_sources.lst | \
       # Voyager client looks only in INCOMING dir, so make symlinks for files 
       # Using hard links because they share timestamp of orig file; soft links don't
       # Voyager can't handle filenames longer than 30 chars, so must shorten some
-      YEAR=`date "+%Y"`  #YYYY
       for FILE in `ls ${VENDOR}`; do
         case ${VENDOR} in
           BLA    )
@@ -115,6 +114,7 @@ cat ${CONFIG}/edi_invoice_sources.lst | \
             ;;
           COU    )
             # COU reuses filenames; add year to make them unique
+            YEAR=`stat -c %y ${VENDOR}/${FILE} | cut -d"-" -f 1`  #YYYY of file modification
             SYMFILE=${FILE}_${YEAR}
             ;;
           EBS    )
