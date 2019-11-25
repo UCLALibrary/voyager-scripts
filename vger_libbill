@@ -24,7 +24,7 @@ DIR=/m1/voyager/ucladb/local/circ
 VGER_BILL_PATH=$DIR/post_libbill_trans
 JAVA=${BIN}/java
 JAVADIR=${VGER_JAVA}
-CLASSPATH=${JAVADIR}/libbill.jar:${JAVADIR}/commons.jar:${JAVADIR}/vgerLibBill.jar:${JAVADIR}/ojdbc7.jar:${JAVADIR}/spring.jar:${JAVADIR}/commons-lang-2.6.jar:${JAVADIR}/log4j-1.2.15.jar
+CLASSPATH=${JAVADIR}/libbill.jar:${JAVADIR}/commons.jar:${JAVADIR}/vgerLibBill.jar:${JAVADIR}/ojdbc7.jar:${JAVADIR}/spring.jar:${JAVADIR}/commons-lang-2.6.jar:${JAVADIR}/log4j-1.2.15.jar:${JAVADIR}/jersey/*:${JAVADIR}/mimepull.jar
 PROPERTIES_FILE=${JAVADIR}/libbill.properties
 
 # No input parameters are necessary. 
