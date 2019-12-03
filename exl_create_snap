@@ -66,7 +66,7 @@ for LV in ${APP_LVNAME} ; do
   fi
   mkdir -p ${BACKUPDIR}/${LV}_snap_${TODAY}
   mkdir -p ${MNTTDIR}/${LV}_snap_${TODAY}
-  mount /dev/${APP_VGNAME}/${LV}_snap_${TODAY} ${MNTTDIR}/${LV}_snap_${TODAY}
+  mount -o nouuid /dev/${APP_VGNAME}/${LV}_snap_${TODAY} ${MNTTDIR}/${LV}_snap_${TODAY}
   if [ $? -ne 0 ] ; then
     echo "Unable to mount snapshot of the ${LV} volume. Backup process halting."
     exit 1
