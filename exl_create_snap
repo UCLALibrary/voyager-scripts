@@ -7,7 +7,7 @@
 
 APPSCRIPTDIR=/usr/local/bin/voyager/scripts
 
-BASEBACKUPDIR=/backup
+BASEBACKUPDIR=/voyagerbackup
 
 MNTTDIR=${BASEBACKUPDIR}/mnt
 

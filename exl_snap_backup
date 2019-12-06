@@ -6,7 +6,7 @@
 # 3. Remove the snapshot
 # 4. NetBackup will perform a full back-up of the copied snapshot data
 
-BASEBACKUPDIR=/backup
+BASEBACKUPDIR=/voyagerbackup
 
 MNTTDIR=${BASEBACKUPDIR}/mnt
 
@@ -36,4 +36,3 @@ for LV in ${APP_LVNAME} ; do
     echo "WARNING: Unable to remove snapshot ${LV}_snap_${TODAY}"
   fi
 done
-
