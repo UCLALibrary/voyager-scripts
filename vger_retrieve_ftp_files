@@ -1,0 +1,42 @@
+#!/bin/sh
+# Retrieves all new files
+# Uses lftp
+
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+if [ -n "$5" ]; then
+  SERVER="$1"
+  USER="$2"
+  PASSWORD="$3"
+  FTPDIR="$4"
+  FILESPEC="$5"
+else
+  echo "Usage: $0 server user password path filespec"
+  exit 
+fi
+
+CURRENT_LIST="${SERVER}_${USER}.lst"
+PREVIOUS_LIST="${CURRENT_LIST}.bak"
+
+if [ -s "${CURRENT_LIST}" ]; then
+  mv "${CURRENT_LIST}" "${PREVIOUS_LIST}"
+else
+  echo "ERROR: Current list ${CURRENT_LIST} is missing or empty - exiting"
+#  exit 1
+fi
+
+# Get FTP directory listing using passed parameters
+# Complains without path to lftp, no idea why
+/usr/bin/lftp -e "cd '${FTPDIR}'; nlist '${FILESPEC}'; quit" -u "${USER},${PASSWORD}" ${SERVER} > "${CURRENT_LIST}"
+
+# Make sure directory listing is sorted in a way which comm will like (previous list is already sorted)
+sort ${CURRENT_LIST} -o ${CURRENT_LIST}
+
+# Compare current list to previous list with comm, to find new files
+# Find files which are in CURRENT_LIST only (-13 = not in #1 and not in both #1 & 2)
+for FILE in `comm -13 ${PREVIOUS_LIST} ${CURRENT_LIST}`; do
+  echo "Retrieving ${FILE}..."
+  /usr/bin/lftp -e "get '${FTPDIR}/${FILE}'; quit" -u "${USER},${PASSWORD}" ${SERVER}
+done
+
