@@ -1,0 +1,49 @@
+#!/bin/sh
+# Retrieve and load Casalini shelfready records
+
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+DIR=/m1/voyager/ucladb/local/eod/casalini/shelfready
+cd ${DIR}
+
+# Get new files by comparing lists in the working directory
+${VGER_SCRIPT}/vger_retrieve_ftp_files ftp.casalini.it CAK000 MKUAAA . "b*"
+
+# If any files were retrieved, process them
+# Approvals: 000b and 010b
+# Firms: 000a
+
+# Rename files to end with .mrc
+for f in b*.[0-9]??; do mv $f $f.mrc; done
+
+# Move firm-order files into done folder
+mv b*000a*.mrc done/
+
+# Load approvals
+mv b*0?0b*.mrc pending/
+
+for FILE in pending/b*-Cak???b.???.mrc; do
+  mv ${FILE} .
+  FILE=`basename ${FILE}`
+  echo ${FILE}
+  vger_bulkimport_file ${FILE} ucladb PCATCAS promptcat
+
+  BASE=`basename ${FILE} .mrc`
+  echo $BASE
+
+  # log.imp.bsr-Cak000b.164.mrc.bulk
+  LOG=log.imp.${BASE}.mrc.bulk
+  mv ${LOG} ${BASE}_phase1.log
+
+  # discard.imp.bsr-Cak000b.164.mrc.bulk
+  DISCARD=discard.imp.${BASE}.mrc.bulk
+  mv ${DISCARD} ${BASE}_phase1.dups
+
+  mv ${BASE}* done
+done
+
+
+
+# Files then get transferred to the BatchCat PC for phase-2 loading, via script on that machine
+

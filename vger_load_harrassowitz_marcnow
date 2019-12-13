@@ -1,0 +1,41 @@
+#!/bin/sh
+# Retrieve and load Harrassowitz shelfready records
+
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+DIR=/m1/voyager/ucladb/local/eod/harrassowitz/marcnow
+cd ${DIR}
+
+# Get new files by comparing lists in the working directory
+${VGER_SCRIPT}/vger_retrieve_ftp_files marcnow.hostedftp.com ucla@marcnow.com fiatlux1919 "/UCLA/Harrassowitz Records" "*"
+
+# If any files were retrieved, process them
+# Firms don't need phase 1
+mv UCLA*firm*.mrc done/
+# Approvals do
+mv UCLA*approval*.mrc pending/
+
+for FILE in pending/UCLA*approval*.mrc; do
+  mv $FILE .
+  FILE=`basename ${FILE}`
+  echo $FILE
+
+  vger_bulkimport_file $FILE ucladb HAR_APPR promptcat
+
+  BASE=`basename ${FILE} .mrc`
+  echo $BASE
+
+  # log.imp.UCLA#85_approval-210100.mrc.bulk
+  LOG=log.imp.${BASE}.mrc.bulk
+  mv ${LOG} ${BASE}_phase1.log
+
+  # discard.imp.UCLA#85_approval-210100.mrc.bulk
+  DISCARD=discard.imp.${BASE}.mrc.bulk
+  mv ${DISCARD} ${BASE}_phase1.dups
+
+  mv ${BASE}* done
+done
+
+# Files then get transferred to the BatchCat PC for phase-2 loading, via script on that machine
+

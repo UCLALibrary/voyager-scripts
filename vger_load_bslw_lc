@@ -1,0 +1,48 @@
+#!/bin/sh
+# Retrieve and load BSLW LC Cooperative pseudo-shelfready records
+
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+DIR=/m1/voyager/ucladb/local/eod/bslw_lc
+cd ${DIR}
+
+# Get new files by comparing lists in the working directory
+${VGER_SCRIPT}/vger_retrieve_ftp_files ftp.bslw.com bucla1 bucla1 out "UCLA_LC*.mrc"
+
+# If any files were retrieved, process them
+for FILE in UCLA_LC*.mrc; do 
+  if [ -s ${FILE} ]; then
+    # Split into 100-record chunks for POs
+	marcsplit -s 100 ${FILE} chunk
+
+	# Load each chunk into Voyager, creating a PO
+	for CHUNK in chunk.???; do 
+	  ${VGER_SCRIPT}/vger_bulkimport_file ${CHUNK} ucladb BSLW_LC promptcat
+	done
+
+	# Rename "chunk" files from load to match input file
+    BASE=`basename $FILE} .mrc`
+    echo ${BASE}
+
+    for LOG in log.*; do
+      SEQ=`echo ${LOG} | cut -d"." -f 4`
+      mv ${LOG} ${BASE}_${SEQ}_phase1.log
+    done
+
+    for DISCARD in discard.*; do
+      SEQ=`echo ${DISCARD} | cut -d"." -f 4`
+      mv ${DISCARD} ${BASE}_${SEQ}_phase1.dups
+    done
+
+	# Delete chunk MARC files (the remaining chunk.???, AFTER renaming logs/dups/errors)
+	rm chunk*
+
+	# Grab PO numbers from chunk logs for Osman
+	egrep "^Purchase|- 100" *.log | mailx -s "BSLW LC file loaded" ocelik@library.ucla.edu akohler@library.ucla.edu
+
+  fi # FILE
+done # FILE
+
+# Files then get transferred to the BatchCat PC for phase-2 loading, via script on that machine
+
