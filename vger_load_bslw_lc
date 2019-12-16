@@ -22,7 +22,7 @@ for FILE in UCLA_LC*.mrc; do
 	done
 
 	# Rename "chunk" files from load to match input file
-    BASE=`basename $FILE} .mrc`
+    BASE=`basename ${FILE} .mrc`
     echo ${BASE}
 
     for LOG in log.*; do
