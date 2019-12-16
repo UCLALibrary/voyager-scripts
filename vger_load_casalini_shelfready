@@ -14,33 +14,38 @@ ${VGER_SCRIPT}/vger_retrieve_ftp_files ftp.casalini.it CAK000 MKUAAA . "b*"
 # Approvals: 000b and 010b
 # Firms: 000a
 
+# Don't use the pattern when no files match
+shopt -s nullglob
+
 # Rename files to end with .mrc
 for f in b*.[0-9]??; do mv $f $f.mrc; done
 
 # Move firm-order files into done folder
-mv b*000a*.mrc done/
+mv b*000a*.mrc done/ 2>/dev/null
 
 # Load approvals
-mv b*0?0b*.mrc pending/
+mv b*0?0b*.mrc pending/ 2>/dev/null
 
 for FILE in pending/b*-Cak???b.???.mrc; do
-  mv ${FILE} .
-  FILE=`basename ${FILE}`
-  echo ${FILE}
-  vger_bulkimport_file ${FILE} ucladb PCATCAS promptcat
+  if [ -s ${FILE} ]; then
+    mv ${FILE} .
+    FILE=`basename ${FILE}`
+    echo ${FILE}
+    vger_bulkimport_file ${FILE} ucladb PCATCAS promptcat
 
-  BASE=`basename ${FILE} .mrc`
-  echo $BASE
+    BASE=`basename ${FILE} .mrc`
+    echo $BASE
 
-  # log.imp.bsr-Cak000b.164.mrc.bulk
-  LOG=log.imp.${BASE}.mrc.bulk
-  mv ${LOG} ${BASE}_phase1.log
+    # log.imp.bsr-Cak000b.164.mrc.bulk
+    LOG=log.imp.${BASE}.mrc.bulk
+    mv ${LOG} ${BASE}_phase1.log
 
-  # discard.imp.bsr-Cak000b.164.mrc.bulk
-  DISCARD=discard.imp.${BASE}.mrc.bulk
-  mv ${DISCARD} ${BASE}_phase1.dups
+    # discard.imp.bsr-Cak000b.164.mrc.bulk
+    DISCARD=discard.imp.${BASE}.mrc.bulk
+    mv ${DISCARD} ${BASE}_phase1.dups
 
-  mv ${BASE}* done
+    mv ${BASE}* done
+  fi
 done
 
 

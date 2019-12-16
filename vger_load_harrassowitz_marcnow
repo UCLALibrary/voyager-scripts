@@ -12,10 +12,12 @@ ${VGER_SCRIPT}/vger_retrieve_ftp_files marcnow.hostedftp.com ucla@marcnow.com fi
 
 # If any files were retrieved, process them
 # Firms don't need phase 1
-mv UCLA*firm*.mrc done/
+mv UCLA*firm*.mrc done/ 2>/dev/null
 # Approvals do
-mv UCLA*approval*.mrc pending/
+mv UCLA*approval*.mrc pending/ 2>/dev/null
 
+# Don't use the pattern when no files match
+shopt -s nullglob
 for FILE in pending/UCLA*approval*.mrc; do
   mv $FILE .
   FILE=`basename ${FILE}`
