@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # CREATE SNAPSHOT PROCEDURE
-# 1. Remove any prior backup directories or lingering snapshots/mountpoints
+# 1. Remove lingering snapshots/mountpoints
 # 2. Create LVM snapshots of each of the ExLibris application volumes
 # 3. Mount the snapshots
 
@@ -28,15 +28,6 @@ TODAY=`date +%Y%m%d`
 
 for LV in ${APP_LVNAME} ; do
   BACKUPDIR=${BASEBACKUPDIR}/`echo ${LV} | sed s/lv_//g`
-
-  # Find and remove any old/lingering back-up directories in ${BACKUPDIR}
-  # These should have already been captured by NetBackup
-  REMOVEDIR=`find ${BACKUPDIR}/* -maxdepth 0 -type d -mmin +1440 2> /dev/null`
-  if [ -n ${REMOVEDIR} ] ; then
-    for DIR in ${REMOVEDIR} ; do
-      rm -rf ${DIR}
-    done
-  fi
 
   # Find and remove any old/lingering snapshots and/or mounts
   OLDSNAPS=`lvs | grep ${LV} | awk '{ print $1 }' | egrep "_snap_????????"`
