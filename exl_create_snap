@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # CREATE SNAPSHOT PROCEDURE
-# 1. Remove any prior backup directories or lingering snapshots/mountpoints
+# 1. Remove lingering snapshots/mountpoints
 # 2. Create LVM snapshots of each of the ExLibris application volumes
 # 3. Mount the snapshots
 
 APPSCRIPTDIR=/usr/local/bin/voyager/scripts
 
-BASEBACKUPDIR=/backup
+BASEBACKUPDIR=/voyagerbackup
 
 MNTTDIR=${BASEBACKUPDIR}/mnt
 
@@ -28,15 +28,6 @@ TODAY=`date +%Y%m%d`
 
 for LV in ${APP_LVNAME} ; do
   BACKUPDIR=${BASEBACKUPDIR}/`echo ${LV} | sed s/lv_//g`
-
-  # Find and remove any old/lingering back-up directories in ${BACKUPDIR}
-  # These should have already been captured by NetBackup
-  REMOVEDIR=`find ${BACKUPDIR}/* -maxdepth 0 -type d -mmin +1440 2> /dev/null`
-  if [ -n ${REMOVEDIR} ] ; then
-    for DIR in ${REMOVEDIR} ; do
-      rm -rf ${DIR}
-    done
-  fi
 
   # Find and remove any old/lingering snapshots and/or mounts
   OLDSNAPS=`lvs | grep ${LV} | awk '{ print $1 }' | egrep "_snap_????????"`
@@ -66,7 +57,7 @@ for LV in ${APP_LVNAME} ; do
   fi
   mkdir -p ${BACKUPDIR}/${LV}_snap_${TODAY}
   mkdir -p ${MNTTDIR}/${LV}_snap_${TODAY}
-  mount /dev/${APP_VGNAME}/${LV}_snap_${TODAY} ${MNTTDIR}/${LV}_snap_${TODAY}
+  mount -o nouuid /dev/${APP_VGNAME}/${LV}_snap_${TODAY} ${MNTTDIR}/${LV}_snap_${TODAY}
   if [ $? -ne 0 ] ; then
     echo "Unable to mount snapshot of the ${LV} volume. Backup process halting."
     exit 1

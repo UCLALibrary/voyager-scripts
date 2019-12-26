@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # CREATE BACKUP PROCEDURE
-# 1. Copy the data from mounted snapshots to the backup directory
-# 2. Unmount the snapshot
-# 3. Remove the snapshot
-# 4. NetBackup will perform a full back-up of the copied snapshot data
+# 1. Remove prior backup directories
+# 2. Copy the data from mounted snapshots to the backup directory
+# 3. Unmount the snapshot
+# 4. Remove the snapshot
 
-BASEBACKUPDIR=/backup
+BASEBACKUPDIR=/voyagerbackup
 
 MNTTDIR=${BASEBACKUPDIR}/mnt
 
@@ -22,6 +22,15 @@ TODAY=`date +%Y%m%d`
 for LV in ${APP_LVNAME} ; do
   BACKUPDIR=${BASEBACKUPDIR}/`echo ${LV} | sed s/lv_//g`
 
+  # Find and remove any old/lingering back-up directories in ${BACKUPDIR}
+  # These should have already been captured by NetBackup
+  REMOVEDIR=`find ${BACKUPDIR}/* -maxdepth 0 -type d -mmin +1440 2> /dev/null`
+  if [ -n ${REMOVEDIR} ] ; then
+    for DIR in ${REMOVEDIR} ; do
+      rm -rf ${DIR}
+    done
+  fi
+
   rsync -r -l -g -o -p -t -H -q --links --inplace \
     ${MNTTDIR}/${LV}_snap_${TODAY}/ ${BACKUPDIR}/${LV}_snap_${TODAY} > /dev/null 2>&1
   if [ $? -ne 0 ] ; then
@@ -36,4 +45,3 @@ for LV in ${APP_LVNAME} ; do
     echo "WARNING: Unable to remove snapshot ${LV}_snap_${TODAY}"
   fi
 done
-
