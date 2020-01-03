@@ -44,7 +44,7 @@ for LV in ${APP_LVNAME} ; do
         fi
         lvremove -f /dev/${APP_VGNAME}/${SNAPNAME} > /dev/null 2>&1
         if [ $? -ne 0 ] ; then
-          echo "WARNING: Unable to remove lingering snapshot ${SNAPNAME}"
+          echo "WARNING: Unable to remove lingering snapshot ${SNAPNAME}" | mail -s "Voyager Backup WARNING: Unable to remove lingering snapshot" lib_devsupport@library.ucla.edu
         fi
       fi
     done
@@ -52,14 +52,14 @@ for LV in ${APP_LVNAME} ; do
 
   lvcreate -L${LVSIZE} -s -n ${LV}_snap_${TODAY} /dev/${APP_VGNAME}/${LV} > /dev/null 2>&1
   if [ $? -ne 0 ] ; then
-    echo "Unable to create snapshot of the ${LV} volume. Backup process halting."
+    echo "Unable to create snapshot of the ${LV} volume. Backup process halting." | mail -s "Voyager Backup ERROR: Unable to create snapshot" lib_devsupport@library.ucla.edu
     exit 1
   fi
   mkdir -p ${BACKUPDIR}/${LV}_snap_${TODAY}
   mkdir -p ${MNTTDIR}/${LV}_snap_${TODAY}
   mount -o nouuid /dev/${APP_VGNAME}/${LV}_snap_${TODAY} ${MNTTDIR}/${LV}_snap_${TODAY}
   if [ $? -ne 0 ] ; then
-    echo "Unable to mount snapshot of the ${LV} volume. Backup process halting."
+    echo "Unable to mount snapshot of the ${LV} volume. Backup process halting." | mail -s "Voyager Backup ERROR: Unable to mount snapshot" lib_devsupport@library.ucla.edu
     exit 1
   fi
 done

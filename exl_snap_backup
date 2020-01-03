@@ -34,7 +34,7 @@ for LV in ${APP_LVNAME} ; do
   rsync -r -l -g -o -p -t -H -q --links --inplace \
     ${MNTTDIR}/${LV}_snap_${TODAY}/ ${BACKUPDIR}/${LV}_snap_${TODAY} > /dev/null 2>&1
   if [ $? -ne 0 ] ; then
-    echo "Copy of ${LV}_snap_${TODAY} snapshot to ${BACKUPDIR}/${LV}_snap_${TODAY} failed. Backup process halting."
+    echo "Copy of ${LV}_snap_${TODAY} snapshot to ${BACKUPDIR}/${LV}_snap_${TODAY} failed. Backup process halting." | mail -s "Voyager Backup ERROR: Copy of snapshot failed" lib_devsupport@library.ucla.edu
     exit 1
   fi
 
@@ -42,6 +42,6 @@ for LV in ${APP_LVNAME} ; do
   rm -rf ${MNTTDIR}/${LV}_snap_${TODAY}
   lvremove -f /dev/${APP_VGNAME}/${LV}_snap_${TODAY} > /dev/null 2>&1
   if [ $? -ne 0 ] ; then
-    echo "WARNING: Unable to remove snapshot ${LV}_snap_${TODAY}"
+    echo "WARNING: Unable to remove snapshot ${LV}_snap_${TODAY}" | mail -s "Voyager Backup WARNING: Unable to remove snapshot" lib_devsupport@library.ucla.edu
   fi
 done
