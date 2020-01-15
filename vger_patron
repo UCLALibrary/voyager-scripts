@@ -90,6 +90,9 @@ ${VGER_SCRIPT}/vger_patron_update sif_daily_changes.out
 # Mark the records as processed on this date.
 ${VGER_SCRIPT}/vger_sqlplus_run vger_support /m1/voyager/ucladb/local/patron/patron_sif_processed
 
+# delete old data from patron_sif table
+${VGER_SCRIPT}/vger_sqlplus_run vger_report /m1/voyager/ucladb/local/patron/clear_patron_sif
+
 # 20100216 drickard: Update patron email addresses to eliminate any expiration dates
 ${VGER_SCRIPT}/vger_updemails ${VGER_JAVA}/voyager.properties /m1/voyager/ucladb/local/patron/vger_updemails_errors.txt
 
