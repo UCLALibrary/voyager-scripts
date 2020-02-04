@@ -84,3 +84,15 @@ else
   echo "No patrons with max outstanding BAR charges to suspend."
 fi
 
+# Clear pop-up notes relating to patrons who are no longer suspended
+# because of outstanding LibBill charges.
+${VGER_SCRIPT}/vger_sqlplus_run vger_support $DIR/delete_libbill_notes
+if [ -s "$DIR/delete_libbill_notes.out" ]; then
+  SUSPENSION_NOTES=`wc -l $DIR/delete_libbill_notes.out | cut -f1 -d' '`
+  echo "Clearing $SUSPENSION_NOTES pop-up notes relating to patrons who are no longer suspended because of outstanding LibBill charges."
+  ${VGER_SCRIPT}/vger_delpatnote $DIR/delete_libbill_notes.out $DIR/delete_libbill_notes.err
+  mv $DIR/delete_libbill_notes.out $DIR/delete_libbill_notes.out.`date "+%Y%m%d"`
+else
+  echo "No pop-up notes relating to patrons who are no longer suspended because of outstanding LibBill charges to clear."
+fi
+
