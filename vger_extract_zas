@@ -44,31 +44,36 @@ DIR=/m1/voyager/ucladb/local/reclamation/zas
 cd ${DIR}
 
 DB=${VGER_BASE}/ucladb
-BASE=zas_extract
 DATE=`date "+%y%m%d"` #YYMMDD
-COLLECTION_ID=1013211
 SYMBOL=ZAS
 
-# Get the full list of ids from database
-${VGER_SCRIPT}/vger_sqlplus_run vger_report ${BASE} ${START_DATE} ${END_DATE}
-LIST=${BASE}.out
+for SCRIPT in zas_extract_oclc zas_extract_no_oclc; do
+  case ${SCRIPT} in
+    zas_extract_oclc ) COLLECTION_ID=1034796;;
+	zas_extract_no_oclc ) COLLECTION_ID=1013211;;
+  esac
 
-OCLCFILE=${COLLECTION_ID}.${SYMBOL}.${DATE}.mrc
-${DB}/sbin/Pmarcexport -o${OCLCFILE} -rB -mM -t${LIST} -q
-rm ${LIST}
+  # Get the full list of ids from database
+  ${VGER_SCRIPT}/vger_sqlplus_run vger_report ${SCRIPT} ${START_DATE} ${END_DATE}
+  LIST=${SCRIPT}.out
 
-# FTP the files to OCLC
-USER=zas
-PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
-(
-  echo "user ${USER} ${PASSWORD}"
-  echo "cd /metacoll/in/bib"
-  echo "bin"
-  echo "put ${OCLCFILE}"
-  echo "dir"
-  echo "quit"
-) | ftp -i -n -v ftp2.oclc.org
+  OCLCFILE=${COLLECTION_ID}.${SYMBOL}.${DATE}.mrc
+  ${DB}/sbin/Pmarcexport -o${OCLCFILE} -rB -mM -t${LIST} -q
+  rm ${LIST}
 
-# Clean up
-mv ${OCLCFILE} ${DIR}/archive
+  # FTP the files to OCLC
+  USER=zas
+  PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
+  (
+    echo "user ${USER} ${PASSWORD}"
+    echo "cd /metacoll/in/bib"
+    echo "bin"
+    echo "put ${OCLCFILE}"
+    echo "dir"
+    echo "quit"
+  ) | ftp -i -n -v ftp2.oclc.org
 
+  # Clean up
+  mv ${OCLCFILE} ${DIR}/archive
+
+done
