@@ -96,3 +96,7 @@ else
   echo "No pop-up notes relating to patrons who are no longer suspended because of outstanding LibBill charges to clear."
 fi
 
+# update Voyager transactions for payments recorded in LibBill
+echo "reconciling payments between LibBill and Voyager"
+${VGER_SCRIPT}/vger_reconcile
+
