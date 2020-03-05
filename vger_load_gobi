@@ -101,6 +101,11 @@ for LOADFILE in *.mrc; do
         PROFILE=GOBI
         CONTACTS="sclermmaint@library.ucla.edu lit-libweb@library.ucla.edu"
         ;;
+	  # Accounts 60 and 77 are from YBPUK
+	  60*|77*)
+        PROFILE=GOBI_UK
+        CONTACTS="mono-acq@library.ucla.edu lit-libweb@library.ucla.edu"
+		;;
       # Everything else is regular Gobi orders
       *) 
         PROFILE=GOBI
