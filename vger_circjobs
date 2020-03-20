@@ -46,7 +46,8 @@ ${VGER_SCRIPT}/vger_circ_transaction_log
 # lost item replacement and lost item processing 
 # fees and we need to do this before forgiving 
 # fines on returned items and sending fines to BAR.
-for JOB in 1 2
+# not running overdues during closure dr 20200320
+for JOB in 1 #2
 do
     ${DIR}/sbin/Pcircjob -j$JOB
 done
@@ -65,7 +66,9 @@ ${VGER_SCRIPT}/vger_bar
 ${VGER_SCRIPT}/vger_libbill
 
 # Run various other Voyager circ jobs
-for JOB in 3 4 5 6 7 8 24
+# not running various notices during closure dr 20200320
+#for JOB in 3 4 5 6 7 8 24
+for JOB in 8 24
 do
     ${DIR}/sbin/Pcircjob -j$JOB
 done
@@ -82,11 +85,11 @@ ${DIR}/sbin/Pcircjob -j19 -s${YESTERDAY} -e${TODAY}
 # Quarter-specific dates, as requested by CSC
 # Fall 2008+: per CV, only turn on lists automatically the first two weeks of the quarter
 # Job 34 (turn on reserve lists)
-START=20200102	
-END=20200321
+START=20200323	
+END=20200611
 case $TODAY in
-  20200102)  ${DIR}/sbin/Pcircjob -j34 -s$START -e$END ;;
-  20200106)  ${DIR}/sbin/Pcircjob -j34 -s$START -e$END ;;
+  20200323)  ${DIR}/sbin/Pcircjob -j34 -s$START -e$END ;;
+  20200330)  ${DIR}/sbin/Pcircjob -j34 -s$START -e$END ;;
 esac
 
 # First Tuesday of the month
@@ -97,9 +100,9 @@ fi
 
 # Occasionally
 case $TODAY in
-20191214)
+20200321)
     # Job 36 (turn off reserve lists) - usually once a quarter, as requested by CSC
-    ${DIR}/sbin/Pcircjob -j36 -s20190923 -e20191214
+    ${DIR}/sbin/Pcircjob -j36 -s20200102 -e20200321
     ;;
 esac
 
