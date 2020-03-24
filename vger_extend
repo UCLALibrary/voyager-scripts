@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+DIR=/m1/voyager/ucladb/local/circ/
+JAVA=${BIN}/java
+JCH=${VGER_JAVA}
+CLASSPATH=${JCH}/vapi-core.jar:${JCH}/vapi-client.jar:${JCH}/vobj.jar:$JCH/extenddue.jar
+PROPERTIES_FILE=${JCH}/extend.props
+
+${VGER_SCRIPT}/vger_sqlplus_run vger_support ${DIR}/get_extends
+
+INPUT_FILE=${DIR}/get_extends.out
+
+LOG_FILE=${JCH}/logs/extends.log
+
+echo -e "\nstarting due-date extension"
+$JAVA -classpath $CLASSPATH edu.ucla.library.libservices.voyager.main.ExtendDueDate ${PROPERTIES_FILE} ${INPUT_FILE} ${LOG_FILE}
+
+if [ -f ${LOG_FILE} ]; then
+  echo -e "\n***** Look at log file ${LOG_FILE} *****"
+fi 
