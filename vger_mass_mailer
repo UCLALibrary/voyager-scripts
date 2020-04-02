@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+DIR=/m1/voyager/ucladb/local/patron
+
+JAVADIR=${VGER_JAVA}
+CLASSPATH=${JAVADIR}/log4j-api-2.11.2.jar:${JAVADIR}/log4j-core-2.11.2.jar:${JAVADIR}/activation-1.1.1.jar:${JAVADIR}/javax.mail-1.6.2.jar:${JAVADIR}/mailer.jar
+PROPERTIES_FILE=${JAVADIR}/mailer.props
+LOG_FILE=${JAVADIR}/logs/mailer.log
+
+${VGER_SCRIPT}/vger_sqlplus_run vger_support ${DIR}/get_emails
+INPUT_FILE=${DIR}/get_emails.out
+
+echo -e "\nstarting emailing"
+java -classpath $CLASSPATH edu.ucla.library.libservices.mailer.MassMailer ${PROPERTIES_FILE} ${INPUT_FILE}
+
+if [ -f ${LOG_FILE} ]; then
+  echo -e "\n***** Look at log file ${LOG_FILE} *****"
+fi
+
