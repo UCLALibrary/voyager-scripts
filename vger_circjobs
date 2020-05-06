@@ -93,11 +93,11 @@ case $TODAY in
 esac
 
 # First Tuesday of the month
-if [ ${DOW} -eq 2 -a ${DOM} -le 7 ]; then
+# 20200505 late edit for pandemic
+#if [ ${DOW} -eq 2 -a ${DOM} -le 7 ]; then
     # Job 14 (fee/fine statements): 1st Tuesday of every month
-	# 20200505 late edit for pandemic
     #${DIR}/sbin/Pcircjob -j14
-fi
+#fi
 
 # Occasionally
 case $TODAY in
@@ -163,15 +163,15 @@ else
 fi
 
 # 2007-06-05 akohler: send email fee/fine statements
+# 20200505 late edit for pandemic drickard
 # First Tuesday of the month
-if [ ${DOW} -eq 2 -a ${DOM} -le 7 ]; then
-	# 20200505 late edit for pandemic drickard
+#if [ ${DOW} -eq 2 -a ${DOM} -le 7 ]; then
     #EMAILLOG=${DIR}/rpt/email_${TODAY}.log
     #${VGER_SCRIPT}/vger_email_finefee_notices > ${EMAILLOG} 2>&1
     #egrep "crcnotes|^Notices sent" ${EMAILLOG} \
     #  | mailx -s "Email fee/fine notices sent ${TODAY}" \
     #    cmedina@library.ucla.edu lit-libweb@library.ucla.edu
-fi
+#fi
 
 # 2007-10-01 chunt: export Voyager monthly circulation stats
 # for the Public Service Stats database.
