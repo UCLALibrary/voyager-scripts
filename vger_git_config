@@ -50,6 +50,15 @@ else
       # Configuration done, so remove the annoying git alias set up to point users to this script.
       unalias git 2>/dev/null
       ;;
+    ap|aprigge)
+      VGER_GIT_USER=aprigge
+      GIT_AUTHOR_NAME="Ashton Prigge"
+      GIT_AUTHOR_EMAIL=aprigge@library.ucla.edu
+      GIT_COMMITTER_NAME=${GIT_AUTHOR_NAME}
+      GIT_COMMITTER_EMAIL=${GIT_AUTHOR_EMAIL}
+      # Configuration done, so remove the annoying git alias set up to point users to this script.
+      unalias git 2>/dev/null
+      ;;
     dr|drickard|drickard1967)
       VGER_GIT_USER=drickard1967
       GIT_AUTHOR_NAME="David Rickard"
