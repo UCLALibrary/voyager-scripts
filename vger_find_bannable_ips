@@ -9,20 +9,21 @@
 # Requires GNU date (standard on our RHEL server)
 # Get date/time in apache log format, ignoring seconds, like: 20/Oct/2016:11:27
 # Using 1 minute for now; could support longer interval via loop
+
 INTERVAL=1	# Minutes ago
 TIME_TO_CHECK=`date --date="${INTERVAL} minutes ago" "+%d/%b/%Y:%H:%M"`
-
 APACHE_LOG=/m1/shared/apache2/logs/ucladb_vwebv/access_log
-
 SEARCH_STRING="searchCode=ISBN"
 THRESHOLD=5	# Searches allowed during INTERVAL
 
 ### Override variables for testing ###
-#TIME_TO_CHECK="19/Oct/2016:01:31"
+#TIME_TO_CHECK="01/Jun/2020:16:"
+#SEARCH_STRING="searchArg="
 #APACHE_LOG=/m1/shared/apache2/logs/ucladb_vwebv/access_log-20161020
 ### End override for testing ###
 
-# Check log entries for TIME_TO_CHECK, for SEARCH_STRING.
+# Check log entries during TIME_TO_CHECK, for SEARCH_STRING.
+# Check the path requested only (the 7th space-delimited field, to awk).
 # Count unique IP addresses and print any occurring more than THRESHOLD times.
 # Output format: 3 fields
 # 1) IP address
@@ -31,7 +32,8 @@ THRESHOLD=5	# Searches allowed during INTERVAL
 
 TIME_NOW=`date "+%d/%b/%Y:%H:%M:%S %z"`
 
-grep ${TIME_TO_CHECK} ${APACHE_LOG} | grep ${SEARCH_STRING} \
-  | awk '{print $1}' | sort | uniq -c \
+grep ${TIME_TO_CHECK} ${APACHE_LOG} \
+  | awk -v SEARCH_STRING="${SEARCH_STRING}" '$7 ~ SEARCH_STRING {print $1}' \
+  | sort | uniq -c \
   | awk -v THRESHOLD="${THRESHOLD}" -v TIME_NOW="${TIME_NOW}" '($1 > THRESHOLD) {print $2, $1, TIME_NOW}'
 
