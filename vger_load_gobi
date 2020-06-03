@@ -13,7 +13,9 @@ SITE=ftp.ybp.com
 FTPDIR=orders
 
 # Retrieve new files for all accounts
-for USER in UCLA uclacl; do
+# 2020-03-21 akohler: No more College files?
+#for USER in UCLA uclacl; do
+for USER in UCLA; do
   PASSWORD=`${VGER_SCRIPT}/get_value.pl ${DIR}/../config/ybp_credentials ${USER}`
   NEWLIST=${DIR}/gobi_current_${USER}.lst
   OLDLIST=${DIR}/gobi_previous_${USER}.lst
