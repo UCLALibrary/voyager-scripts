@@ -1,0 +1,75 @@
+#!/bin/sh
+# Refresh test data (Oracle db, Voyager keyword files) from production.
+
+# Must run as root
+if [ "`/usr/bin/id | cut -f1 -d')' | cut -f2 -d '('`" != "root" ]; then
+  echo "ERROR: Must run as root"
+  exit 1
+fi
+
+# Must run only on test server
+if [ "`hostname`" != "t-w-voyager01" ]; then
+  echo "ERROR: Must run on test server t-w-voyager01"
+  exit 1
+fi
+
+# Today's backup, on production
+# Will need to look in two directories, with the same name
+YYYYMMDD=`date "+%Y%m%d"`
+BACKUP_SUBDIR=lv_oradata_snap_${YYYYMMDD}
+BACKUP_ORACLE=/voyagerbackup/oradata/lv_oradata_snap_${YYYYMMDD}/VGER
+BACKUP_VOYAGER=/voyagerbackup/m1/lv_m1_snap_${YYYYMMDD}/voyager
+PROD=p-w-voyager01
+
+# Only proceed if the production backup directories exist
+su - voyager -c "ssh ${PROD} '[ -d ${BACKUP_ORACLE} ]'" 
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to reach ${PROD}:${BACKUP_ORACLE} - exiting"; exit 1
+fi
+su - voyager -c "ssh ${PROD} '[ -d ${BACKUP_VOYAGER} ]'"
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to reach ${PROD}:${BACKUP_VOYAGER} - exiting"; exit 1
+fi
+
+# Shut down the Voyager stack
+echo "Stopping Voyager..."
+/etc/init.d/httpd2 stop
+/etc/init.d/voyager stop
+/etc/init.d/dbora stop
+
+echo "Starting database copy: "`date`
+# Remove old Oracle files, and copy Oracle files from prod backups
+ORACLE_DIR=/oracle/oradata/VGER
+for SUBDIR in cntl redo system; do
+  echo "Processing Oracle files for ${SUBDIR}..."
+  rm ${ORACLE_DIR}/${SUBDIR}/*
+  su - oracle -c "scp -p ${PROD}:${BACKUP_ORACLE}/${SUBDIR}/* ${ORACLE_DIR}/${SUBDIR}/"
+done
+# Lots of data files, copy them in parallel batches
+SUBDIR=data
+echo "Processing ${SUBDIR}..."
+rm ${ORACLE_DIR}/${SUBDIR}/*
+su - oracle -c "scp -p ${PROD}:${BACKUP_ORACLE}/${SUBDIR}/[V]* ${ORACLE_DIR}/${SUBDIR}/" &
+# This one will take longer
+su - oracle -c "scp -p ${PROD}:${BACKUP_ORACLE}/${SUBDIR}/[EFUu]* ${ORACLE_DIR}/${SUBDIR}/" 
+echo "Finished database copy: "`date`
+
+# Remove old Voyager keyword files, and copy from prod backups
+for DB in ethnodb filmntvdb ucladb; do
+  echo "Processing keyword files for ${DB}..."
+  VOYAGER_DIR=/m1/voyager/${DB}
+  # Remove bib and holdings
+  rm ${VOYAGER_DIR}/*data/*
+  # Copy bibs
+  su - voyager -c "scp -p ${PROD}:${BACKUP_VOYAGER}/${DB}/data/* ${VOYAGER_DIR}/data/"
+  # Copy holdings
+  su - voyager -c "scp -p ${PROD}:${BACKUP_VOYAGER}/${DB}/mfhd.data/* ${VOYAGER_DIR}/mfhd.data/"
+done
+echo "Finished keyword copy: "`date`
+
+# Start up the Voyager stack
+echo "Starting Voyager..."
+/etc/init.d/dbora start
+/etc/init.d/voyager start
+/etc/init.d/httpd2 start
+
