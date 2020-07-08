@@ -175,9 +175,9 @@ date
 SQLFILE=${TABLE}.$$.sql
 (
   echo "PROMPT Creating index: ${SCHEMA}.ix_${DB}_${TYPE}_sf_tag_id"
-  echo "CREATE INDEX ${SCHEMA}.ix_${DB}_${TYPE}_sf_tag_id ON ${SCHEMA}.${TABLE} (tag, record_id) NOLOGGING;"
+  echo "CREATE INDEX ${SCHEMA}.ix_${DB}_${TYPE}_sf_tag_id ON ${SCHEMA}.${TABLE} (tag, record_id, field_seq) NOLOGGING;"
   echo "PROMPT Creating index: ${SCHEMA}.ix_${DB}_${TYPE}_sf_id"
-  echo "CREATE INDEX ${SCHEMA}.ix_${DB}_${TYPE}_sf_id ON ${SCHEMA}.${TABLE} (record_id) NOLOGGING;"
+  echo "CREATE INDEX ${SCHEMA}.ix_${DB}_${TYPE}_sf_id ON ${SCHEMA}.${TABLE} (record_id, field_seq) NOLOGGING;"
   echo "QUIT;"
 ) > ${SQLFILE}
 
