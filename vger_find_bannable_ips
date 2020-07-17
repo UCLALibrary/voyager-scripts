@@ -10,6 +10,28 @@
 # Get date/time in apache log format, ignoring seconds, like: 20/Oct/2016:11:27
 # Using 1 minute for now; could support longer interval via loop
 
+#########################################################################
+function check_log() {
+  # Check log entries in APACHE_LOG, during TIME_TO_CHECK, for SEARCH_STRING.
+  # Check the path requested only (the 7th space-delimited field, to awk).
+  # Count unique IP addresses and print any occurring more than THRESHOLD times.
+  # Output format: 3 fields
+  # 1) IP address
+  # 2) number of occurrences
+  # 3) Current time, in full apache log format, to make fail2ban happy.
+  TIME_TO_CHECK="$1"
+  APACHE_LOG="$2"
+  SEARCH_STRING="$3"
+  THRESHOLD="$4"
+  TIME_NOW=`date "+%d/%b/%Y:%H:%M:%S %z"`
+
+  grep ${TIME_TO_CHECK} ${APACHE_LOG} \
+    | awk -v SEARCH_STRING="${SEARCH_STRING}" '$7 ~ SEARCH_STRING {print $1}' \
+    | sort | uniq -c \
+    | awk -v THRESHOLD="${THRESHOLD}" -v TIME_NOW="${TIME_NOW}" '($1 > THRESHOLD) {print $2, $1, TIME_NOW}'
+}
+#########################################################################
+
 INTERVAL=1	# Minutes ago
 TIME_TO_CHECK=`date --date="${INTERVAL} minutes ago" "+%d/%b/%Y:%H:%M"`
 APACHE_LOG=/m1/shared/apache2/logs/ucladb_vwebv/access_log
@@ -22,18 +44,26 @@ THRESHOLD=5	# Searches allowed during INTERVAL
 #APACHE_LOG=/m1/shared/apache2/logs/ucladb_vwebv/access_log-20161020
 ### End override for testing ###
 
-# Check log entries during TIME_TO_CHECK, for SEARCH_STRING.
-# Check the path requested only (the 7th space-delimited field, to awk).
-# Count unique IP addresses and print any occurring more than THRESHOLD times.
-# Output format: 3 fields
-# 1) IP address
-# 2) number of occurrences
-# 3) Current time, in full apache log format, to make fail2ban happy.
+# ISBN check
+check_log ${TIME_TO_CHECK} ${APACHE_LOG} ${SEARCH_STRING} ${THRESHOLD}
 
-TIME_NOW=`date "+%d/%b/%Y:%H:%M:%S %z"`
 
-grep ${TIME_TO_CHECK} ${APACHE_LOG} \
-  | awk -v SEARCH_STRING="${SEARCH_STRING}" '$7 ~ SEARCH_STRING {print $1}' \
-  | sort | uniq -c \
-  | awk -v THRESHOLD="${THRESHOLD}" -v TIME_NOW="${TIME_NOW}" '($1 > THRESHOLD) {print $2, $1, TIME_NOW}'
+# Check also for abusive harvesters / link-checkers, sending requests for specific records.
+# Direct links are OK to enter the catalog, but repeated ones from the same IP are not.
+# Direct links look like:
+# * GET /vwebv/holdingsInfo?bibId=
+# * GET /vwebv/staffView?bibId=
+# Navigating through search results is perfectly fine, and looks like:
+# * GET /vwebv/holdingsInfo?searchId=1240&recPointer=6&recCount=50
+# * GET /vwebv/staffView?searchId=1307&recPointer=0&recCount=50&bibId=
+
+# Allow more of these in a minute, users may be opening multiple links from LibGuides for example.
+THRESHOLD=15
+
+# Awk escaping ? requires quad-backslash.....
+SEARCH_STRING="/vwebv/holdingsInfo\\\\?bibId="
+check_log ${TIME_TO_CHECK} ${APACHE_LOG} ${SEARCH_STRING} ${THRESHOLD}
+
+SEARCH_STRING="/vwebv/staffView\\\\?bibId="
+check_log ${TIME_TO_CHECK} ${APACHE_LOG} ${SEARCH_STRING} ${THRESHOLD}
 
