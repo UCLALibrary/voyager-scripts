@@ -85,11 +85,11 @@ ${DIR}/sbin/Pcircjob -j19 -s${YESTERDAY} -e${TODAY}
 # Quarter-specific dates, as requested by CSC
 # Fall 2008+: per CV, only turn on lists automatically the first two weeks of the quarter
 # Job 34 (turn on reserve lists)
-START=20200622
-END=20200912
+START=20200928
+END=20201212
 case $TODAY in
-  20200622)  ${DIR}/sbin/Pcircjob -j34 -s$START -e$END ;;
-  20200629)  ${DIR}/sbin/Pcircjob -j34 -s$START -e$END ;;
+  20200928)  ${DIR}/sbin/Pcircjob -j34 -s$START -e$END ;;
+  20201005)  ${DIR}/sbin/Pcircjob -j34 -s$START -e$END ;;
 esac
 
 # First Tuesday of the month
@@ -101,9 +101,9 @@ esac
 
 # Occasionally
 case $TODAY in
-20200613)
+20200912)
     # Job 36 (turn off reserve lists) - usually once a quarter, as requested by CSC
-    ${DIR}/sbin/Pcircjob -j36 -s20200325 -e20200613
+    ${DIR}/sbin/Pcircjob -j36 -s20200622 -e20200912
     ;;
 esac
 
