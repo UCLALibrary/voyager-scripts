@@ -76,7 +76,7 @@ OCLCFILE=${COLLECTION_ID}.${SYMBOL}.${YYMMDD}.mrc
 mv clusp_lhrs.mrc ${OCLCFILE}
 
 # FTP the file to OCLC
-USER=clusp
+USER=fx_clusp
 PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
 (
   echo "user ${USER} ${PASSWORD}"
@@ -85,7 +85,7 @@ PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
   echo "put ${OCLCFILE}"
   echo "dir"
   echo "quit"
-) | ftp -i -n -v ftp2.oclc.org
+) | ftp -i -n -v filex-m1.oclc.org
 
 # Cleanup
 mv ${LHR}/${OCLCFILE} ${LHR}/archive/
