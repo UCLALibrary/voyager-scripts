@@ -66,7 +66,7 @@ for SCRIPT in zas_extract_oclc zas_extract_no_oclc; do
   PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
   (
     echo "user ${USER} ${PASSWORD}"
-    echo "cd /metacoll/in/bib"
+    echo "cd /xfer/metacoll/in/bib"
     echo "bin"
     echo "put ${OCLCFILE}"
     echo "dir"

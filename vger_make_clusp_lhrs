@@ -80,7 +80,7 @@ USER=fx_clusp
 PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
 (
   echo "user ${USER} ${PASSWORD}"
-  echo "cd /metacoll/in/lhr"
+  echo "cd /xfer/metacoll/in/lhr"
   echo "bin"
   echo "put ${OCLCFILE}"
   echo "dir"

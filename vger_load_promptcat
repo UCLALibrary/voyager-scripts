@@ -42,7 +42,7 @@ echo "Checking for files for date: ${DATE}"
 
 # For a given date, there may be several files:
 # Starting May 1 2016, files now come via OCLC WCP service.
-# Files are in /metacoll/out/ongoing/wcp/
+# Files are in /xfer/metacoll/out/ongoing/wcp/
 # MARC files look like this:
 # - metacoll.CLU.wcp.FIRM.YDX.D20160502.T183027.1.mrc
 # - metacoll.CLU.wcp.APPR.YNK.D20160501.T183027.1.mrc
@@ -53,7 +53,7 @@ USER=fx_clu
 PASSWORD=`${VGER_SCRIPT}/get_value.pl ${VGER_CONFIG}/oclc_credentials ${USER}`
 (
   echo "user ${USER} ${PASSWORD}"
-  echo "cd /metacoll/out/ongoing/wcp/"
+  echo "cd /xfer/metacoll/out/ongoing/wcp/"
   echo "bin"
   echo "mget *.D20${DATE}.*.mrc"
   echo "quit"
