@@ -39,7 +39,7 @@ for FILE in UCLA_LC*.mrc; do
 	rm chunk*
 
 	# Grab PO numbers from chunk logs for Osman
-	egrep "^Purchase|- 100" *.log | mailx -s "BSLW LC file loaded" ocelik@library.ucla.edu akohler@library.ucla.edu
+	egrep "^Purchase|- 100" *.log | mailx -s "BSLW LC file loaded" stacymckenna@library.ucla.edu jriemer@library.ucla.edu akohler@library.ucla.edu
 
   fi # FILE
 done # FILE
