@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Get voyager environment, for vars and for cron
+. `echo $HOME | sed "s/$LOGNAME/voyager/"`/.profile.local
+
+SQL_DIR=/m1/voyager/ucladb/local/hathi/sql/call_slip
+SQL_DATA=${SQL_DIR}/get_call_slip_hathi.sql
+SQL_PREP=${SQL_DIR}/move_call_slip_hathi.sql
+SQL_UPD=${SQL_DIR}/update_call_slip_hathi.sql
+
+# Move relevant data from active request table to local archive.
+# This must be done as ucladb.
+$VGER_SCRIPT/vger_sqlplus_run ucladb ${SQL_PREP}
+
+# Get data from database, into SQL_DATA.out
+SCHEMA=vger_support
+DATA=${SQL_DATA}.out
+${VGER_SCRIPT}/vger_sqlplus_run ${SCHEMA} ${SQL_DATA}
+
+# Process each row of data
+cat ${DATA} | while read ID EMAIL LINK; do
+  # Insert Hathi link into message via heredoc
+  MESSAGE=`cat <<EOF
+Dear UCLA Library Patron,
+
+The item you requested is available online via the HathiTrust, and due to copyright, we are not permitted to fulfill your paging request for the physical item.
+
+To access the item remotely, please go to the following link (you can copy and paste this into a web browser):
+$LINK
+
+If you have any additional questions, please email yrl-circ@library.ucla.edu.
+
+Sincerely,
+The UCLA Library
+EOF
+`
+
+  # Override email for testing
+  EMAIL=akohler@library.ucla.edu
+  SUBJECT="Your UCLA Library requested item is available through HathiTrust"
+
+  # Send the message via mailx
+  echo "$MESSAGE" | mailx -s "${SUBJECT}" "${EMAIL}"
+
+  # Mark the corresponding request as done
+  ${VGER_SCRIPT}/vger_sqlplus_run ${SCHEMA} ${SQL_UPD} ${ID}
+
+done # while read DATA
+
+# Clean up output from queries
+rm ${SQL_DIR}/*.out
+
