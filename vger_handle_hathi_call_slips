@@ -36,11 +36,13 @@ EOF
 `
 
   # Override email for testing
-  EMAIL=akohler@library.ucla.edu
+  #####EMAIL=akohler@library.ucla.edu
   SUBJECT="Your UCLA Library requested item is available through HathiTrust"
 
   # Send the message via mailx
   echo "$MESSAGE" | mailx -s "${SUBJECT}" "${EMAIL}"
+  # Log some info
+  echo "Sending message about request ${ID} to ${EMAIL}"
 
   # Mark the corresponding request as done
   ${VGER_SCRIPT}/vger_sqlplus_run ${SCHEMA} ${SQL_UPD} ${ID}
