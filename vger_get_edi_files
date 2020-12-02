@@ -119,16 +119,19 @@ cat ${CONFIG}/edi_invoice_sources.lst | \
             ;;
           EBS    )
             # EBS names for Law are too long; replace acccount-specific first part with LAW_
-            SYMFILE=`echo ${FILE} | sed "s/^LA77190.S[0-9][0-9]./LAW_/g"`
+            #SYMFILE=`echo ${FILE} | sed "s/^LA77190.S[0-9][0-9]./LAW_/g"`
+            SYMFILE=`echo ${FILE} | sed "s/LA77190./LAW_/g"`
+			# Also remove account VOY0196.
+            SYMFILE=`echo ${SYMFILE} | sed "s/^VOY0196.//g"`
             ;;
           HAR    )
             # HAR uses too-long filenames; keep only selected parts
             SYMFILE=`echo ${FILE} | awk -F. '{ print $1 "." $3 "." $4 }'`
             ;;
-	  JPT    )
-	    # JPT includes their vendor code (as Jpt) already; remove it since we add in the next step.
-	    SYMFILE=`echo ${FILE} | sed 's/^Jpt_//'`
-	    ;;
+	      JPT    )
+	        # JPT includes their vendor code (as Jpt) already; remove it since we add in the next step.
+	        SYMFILE=`echo ${FILE} | sed 's/^Jpt_//'`
+	        ;;
           MID    )
             # MID uses too-long filenames; keep only selected parts
             SYMFILE=`echo ${FILE} | awk -F. '{ print $2 "." $3 }'`
