@@ -18,18 +18,23 @@ APP_VGNAME=vg_voyager
 APP_LVNAME=`lvs | grep ${APP_VGNAME} | awk '{ print $1 }' | egrep -v "backup|snap"`
 
 TODAY=`date +%Y%m%d`
+CUTOFF_DATE=`date -d 'now - 1 days' "+%Y%m%d"`
 
 for LV in ${APP_LVNAME} ; do
+  # Example BACKUPDIR: /voyagerbackup/m1
   BACKUPDIR=${BASEBACKUPDIR}/`echo ${LV} | sed s/lv_//g`
 
-  # Find and remove any old/lingering back-up directories in ${BACKUPDIR}
-  # These should have already been captured by NetBackup
-  REMOVEDIR=`find ${BACKUPDIR}/* -maxdepth 0 -type d -mmin +1440 2> /dev/null`
-  if [ -n ${REMOVEDIR} ] ; then
-    for DIR in ${REMOVEDIR} ; do
-      rm -rf ${DIR}
-    done
-  fi
+  # Remove old back-up directories in ${BACKUPDIR}
+  # Keep only yesterday and today's backups
+  # All previous backups have already been captured by NetBackup
+  DIRLIST=`find ${BACKUPDIR}/* -maxdepth 0 -type d -name "lv_*_snap_????????" -printf "%f\n"`
+  for DIR in ${DIRLIST} ; do
+    # Grab just the date suffix (YYYYMMDD) from the backup dir name lv_*_snap_YYYYMMDD
+    DATE=`echo ${DIR} | awk -F "_" '{ print $4 }'`
+    if [ $(( ${DATE} - ${CUTOFF_DATE} )) -lt 0 ] ; then
+      rm -rf ${BACKUPDIR}/${DIR}
+    fi
+  done
 
   rsync -r -l -g -o -p -t -H -q --links --inplace \
     ${MNTTDIR}/${LV}_snap_${TODAY}/ ${BACKUPDIR}/${LV}_snap_${TODAY} > /dev/null 2>&1
