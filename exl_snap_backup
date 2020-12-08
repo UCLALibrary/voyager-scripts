@@ -18,7 +18,7 @@ APP_VGNAME=vg_voyager
 APP_LVNAME=`lvs | grep ${APP_VGNAME} | awk '{ print $1 }' | egrep -v "backup|snap"`
 
 TODAY=`date +%Y%m%d`
-DAYSAGO=`date -d 'now - 1 days' "+%Y%m%d"`
+CUTOFF_DATE=`date -d 'now - 1 days' "+%Y%m%d"`
 
 for LV in ${APP_LVNAME} ; do
   # Example BACKUPDIR: /voyagerbackup/m1
@@ -31,7 +31,7 @@ for LV in ${APP_LVNAME} ; do
   for DIR in ${DIRLIST} ; do
     # Grab just the date suffix (YYYYMMDD) from the backup dir name lv_*_snap_YYYYMMDD
     DATE=`echo ${DIR} | awk -F "_" '{ print $4 }'`
-    if [ $(( ${DATE} - ${DAYSAGO} )) -lt 0 ] ; then
+    if [ $(( ${DATE} - ${CUTOFF_DATE} )) -lt 0 ] ; then
       rm -rf ${BACKUPDIR}/${DIR}
     fi
   done
