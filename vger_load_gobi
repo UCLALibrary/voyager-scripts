@@ -86,7 +86,7 @@ for LOADFILE in *.mrc; do
       # Accounts 04 and 05 are ILL for YRL
       04*|05*)
         PROFILE=GOBILLYR
-        CONTACTS="cmedina@library.ucla.edu jcl@library.ucla.edu lit-libweb@library.ucla.edu"
+        CONTACTS="cmedina@library.ucla.edu aaa@library.ucla.edu sfarfan@library.ucla.edu lit-libweb@library.ucla.edu"
         ;;
       # Account 06 is ILL for Biomed
       06*)
