@@ -44,7 +44,8 @@ BULKNAME=`basename ${LOADFILE}`.bulk
 # Load the records
 echo Starting import, please wait...
 # With 9.1.1, use -M because sbin/Pbulkimport now checks (correctly) for other running processes
-OUTPUT=`${BASE}/sbin/Pbulkimport -f${LOADFILE} -i${PROFILE} -o${USERID} -l${LOCATION} -L${BULKNAME} -M`
+# Try using the -C flag to avoid spurious creation of 035 fields 2021-04-30 akohler.
+OUTPUT=`${BASE}/sbin/Pbulkimport -f${LOADFILE} -i${PROFILE} -o${USERID} -l${LOCATION} -L${BULKNAME} -M -C`
 # OUTPUT looks like this:
 # bulkimport started. Reports will be in /m1/voyager/ucladb/rpt. Bulkimport Process id: 5243
 PID=`echo ${OUTPUT} | awk '{print $11}'`
